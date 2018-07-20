@@ -1,130 +1,69 @@
-import numpy as np
+import os
+import pickle
+import re
 
-from dataset import get_matrices, get_pas_lists
-from summarization import best_pas, summary_clustering_score, summary_clustering_score_2
+from dataset import get_matrices, get_pas_lists, get_duc, store_duc_matrices, shuffle_data, get_nyt, \
+    store_pas_nyt_dataset
+from summarization import training, testing, testing_weighted
 
-## DATASET TEST
-#store_pas_duc_dataset("C:/Users/Riccardo/Desktop/duc")
-#store_duc_matrices()
+_duc_path_ = "C:/Users/Riccardo/Desktop/duc"
+_nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
+#store_pas_nyt_dataset(_nyt_path_, 0, 5)
 
-""" # CLUSTERING TEST, ONE BY ONE
+"""        TESTING
+weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                (0.4, 0.6), (0.5, 0.5),(0.6, 0.4), (0.7, 0.3),
+                (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+batch = 9
+for weights in weights_list:
+    model_name = "batch" + str(batch) + "/" + str(weights[0]) + "-" + str(weights[1])
+    # model_name = str(weights[0]) + "-" + str(weights[1])
 
-# Position score, sentence length score, tf_idf, numerical data, centrality, title.
-#weights = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0]
-#weights = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-weights = [0.2, 0.1, 0.3, 0.1, 0.1, 0.2]                # best so far.
-#weights = [0.3, 0.05, 0.3, 0.1, 0.05, 0.2]
+    doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, batch=batch)
+    docs_pas_lists, _ = get_pas_lists(batch=batch)
+    _, refs, _ = get_duc(_duc_path_, batch=batch)
 
-docs_pas_lists, refs_pas_lists = get_pas_lists()
-doc_matrix, ref_matrix = get_matrices(include_embeddings=False)
+    training_no = 348       # includes validation.
 
-index = 0
-
-outliers = 0
-doc_perc_tot = 0
-ref_perc_tot = 0
-best_perc_tot = 0
-score_tot = 0
-for index in range(len(docs_pas_lists)):
-    best_pas_list = best_pas(docs_pas_lists[index], len(refs_pas_lists[index]), weights)
-    #best_vectors = np.array([np.append(pas.embeddings, pas.vector) for pas in best_pas_list])
-    best_vectors = np.array([np.array(pas.vector) for pas in best_pas_list])
-
-    doc_perc, ref_perc, best_perc, score = summary_clustering_score(doc_matrix[index], best_vectors, ref_matrix[index])
-    if doc_perc:
-        doc_perc_tot += doc_perc
-        ref_perc_tot += ref_perc
-        best_perc_tot += best_perc
-        score_tot += score
-    else:
-        outliers += 1
-
-doc_no = len(docs_pas_lists) - outliers
-print("Outliers: " + str(outliers))
-print(weights)
-print("FINAL SCORES:")
-print("DOC %:")
-print("{:.3%}".format(doc_perc_tot/doc_no))
-print("REF %:")
-print("{:.3%}".format(ref_perc_tot/doc_no))
-print("BEST %:")
-print("{:.3%}".format(best_perc_tot/doc_no))
-print("SCORE:")
-print("{:.3%}".format(score_tot/doc_no))
-
+    score = testing(model_name,
+                    docs_pas_lists[training_no:],
+                    doc_matrix[training_no:, :, :],
+                    score_matrix[training_no:, :],
+                    refs[training_no:])
+    with open("C:/Users/Riccardo/Desktop/temp_results/results.txt", "a") as res_file:
+        print(model_name, file=res_file)
+        print(score, file=res_file)
+        print("=================================================", file=res_file)
 """
 
 
-""" # CLUSTERING USING ALL THE DOCS
-# Position score, sentence length score, tf_idf, numerical data, centrality, title.
-weights = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
-#weights = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0]
-#weights = [0.2, 0.1, 0.3, 0.1, 0.1, 0.2]                # best so far.
-#weights = [0.3, 0.05, 0.3, 0.1, 0.05, 0.2]
+""" TRAINING
+for i in range(3, 10):
+    shuffle_data(i)
+    weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                    (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
+                    (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+    for weights in weights_list:
+        model_name = "batch" + str(i) + "/" + str(weights[0]) + "-" + str(weights[1])
+        doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, batch=i)
+        docs_pas_lists, _ = get_pas_lists(batch=i)
+        _, refs, _ = get_duc(_duc_path_, batch=i)
 
-docs_pas_lists, refs_pas_lists = get_pas_lists()
-doc_matrix, ref_matrix = get_matrices(include_embeddings=False)
+        training_no = 348       # includes validation.
 
-all_doc_vectors = doc_matrix[0, :, :]
-all_ref_vectors = ref_matrix[0, :, :]
-
-best_pas_list = best_pas(docs_pas_lists[0], len(refs_pas_lists[0]), weights)
-# best_vectors = np.array([np.append(pas.vector, pas.embeddings) for pas in best_pas_list])
-all_best_vectors = np.array([np.array(pas.vector) for pas in best_pas_list])
-
-for i in range(1, len(docs_pas_lists)):
-    all_doc_vectors = np.concatenate((all_doc_vectors, doc_matrix[i]))
-    all_ref_vectors = np.concatenate((all_ref_vectors, ref_matrix[i]))
-
-
-    best_pas_list = best_pas(docs_pas_lists[i], len(refs_pas_lists[i]), weights)
-    #best_vectors = np.array([np.append(pas.embeddings, pas.vector) for pas in best_pas_list])
-    best_vectors = np.array([np.array(pas.vector) for pas in best_pas_list])
-    all_best_vectors = np.concatenate((all_best_vectors, best_vectors))
-
-
-doc_perc, ref_perc, best_perc, score = summary_clustering_score(all_doc_vectors, all_best_vectors, all_ref_vectors)
-
-print(weights)
-print("FINAL SCORES:")
-print("DOC %:")
-print("{:.3%}".format(doc_perc))
-print("REF %:")
-print("{:.3%}".format(ref_perc))
-print("BEST %:")
-print("{:.3%}".format(best_perc))
-print("SCORE:")
-print("{:.3%}".format(score))
-
+        training(doc_matrix[:training_no, :, :], score_matrix[:training_no, :], model_name)
 """
 
-
-# Position score, sentence length score, tf_idf, numerical data, centrality, title.
-#weights = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0]
-#weights = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
 #weights = [0.2, 0.1, 0.3, 0.1, 0.1, 0.2]
-weights = [0.4, 0.1, 0.1, 0.3, 0.0, 0.1]        # best so far.
+weights = [0.3, 0.05, 0.3, 0.1, 0.05, 0.2]
+#weights = [0.0, 0.0, 0.0, 1.0, 0.0, 0.0]
+docs_pas_lists, _ = get_pas_lists()
+_, refs, _ = get_duc(_duc_path_)
 
-docs_pas_lists, refs_pas_lists = get_pas_lists()
-doc_matrix, ref_matrix = get_matrices()
-
-
-index = 0
-summ_coverage_tot = 0
-summ_adj_coverage_tot = 0
-
-for index in range(len(docs_pas_lists)):
-    best_pas_list = best_pas(docs_pas_lists[index], len(refs_pas_lists[index]), weights)
-    best_vectors = np.array([np.array(pas.embeddings) for pas in best_pas_list])
-
-    summ_coverage, summ_adj_coverage = summary_clustering_score_2(doc_matrix[index, :, 6:], best_vectors, ref_matrix[index, :, 6:])
-    summ_coverage_tot += summ_coverage
-    summ_adj_coverage_tot += summ_adj_coverage
-
-print("\n\n\n\n")
-print("AVERAGE SUMMARY COVERAGE:")
-print(summ_coverage_tot/len(docs_pas_lists))
-
-print("AVERAGE SUMMARY ADJUSTED COVERAGE:")
-print(summ_adj_coverage_tot/len(docs_pas_lists))
+with open("C:/Users/Riccardo/Desktop/temp_results/results.txt", "a") as res_file:
+    print(weights, file=res_file)
+    print(testing_weighted(docs_pas_lists, refs, weights), file=res_file)
+    print("=================================================", file=res_file)
+"""

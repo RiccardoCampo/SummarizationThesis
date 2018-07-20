@@ -1,47 +1,18 @@
-from math import sqrt
-
+import os
+import shutil
 import numpy as np
-from scipy.cluster.hierarchy import fclusterdata
-from sklearn.cluster import KMeans
 
-from pas import extract_pas, realize_pas
+from keras.engine.saving import load_model
+from numpy.linalg import norm
+from sklearn.cluster import KMeans
 from pyrouge import Rouge155
 
-
-# Return the summary of the source text given the source text, the max length and the weights.
-def summarize(source_text, max_length, weights, dataset_name):
-    # Extracting PASs and clustering them.
-    pas_list = extract_pas(source_text, dataset_name)
-    # clustering_pas(pas_list, weights)
-
-    # Creating a list of PASs and relative scores then ordering it.
-    sorted_list = []
-    for pas in pas_list:
-        score = np.array(pas.vector).dot(np.array(weights))
-        sorted_list.append((score, realize_pas(pas), pas.position))
-    sorted_list.sort(key=lambda tup: tup[0])
-
-    # Selecting best scored PASs until max length is reached
-    best_pas_list = []
-    summ_len = 0
-    for scored_pas in sorted_list:
-        if summ_len + len(scored_pas[1]) > max_length:
-            break
-        best_pas_list.append((scored_pas[2], scored_pas[1]))
-        summ_len += len(scored_pas[1])
-
-    sorted_list.sort(key=lambda tup: tup[0], reverse=True)
-    summary = ""
-    for bp in best_pas_list:
-        summary += bp[1]
-
-    return summary
+from keras.models import Sequential
+from keras.layers import Dense, LSTM, Bidirectional, Masking
 
 
 # Return the best PASs of the source text given the source text, the max number of PASs and the weights.
 def best_pas(pas_list, max_pas, weights):
-    # clustering_pas(pas_list, weights)
-
     # Creating a list of PASs and relative scores then ordering it.
     sorted_list = []
     for pas in pas_list:
@@ -57,40 +28,108 @@ def best_pas(pas_list, max_pas, weights):
     return best_pas_list
 
 
-# Retaining the most scored PAS between the couples of PAS which are too similar to each other.
-def clustering_pas(pas_list, weights):
-    removed_pas = []
-    for pas1 in pas_list:
-        for pas2 in pas_list:
-            # For each couple of different PAS their similarity is computed as the inner product of their embeddings
-            if (not pas1 == pas2) and pas1 not in removed_pas and pas2 not in removed_pas:
-                if np.inner(np.array(pas1.embeddings), np.array(pas2.embeddings)) > 0.7:
-                    print(realize_pas(pas1))
-                    print(realize_pas(pas2))
-                    if np.array(pas1.vector).dot(np.array(weights)) > np.array(pas2.vector).dot(np.array(weights)):
-                        pas_list.remove(pas2)
-                        removed_pas.append(pas2)
-                    else:
-                        pas_list.remove(pas1)
-                        removed_pas.append(pas2)
+# Assign scores to each pas in the document
+def score_document(doc_vectors, ref_vectors, weights):
+    scores = np.zeros(len(doc_vectors))
+    doc_vectors = doc_vectors[~np.all(doc_vectors == 0, axis=1)]
+    ref_vectors = ref_vectors[~np.all(ref_vectors == 0, axis=1)]
+    features_no = 6
+
+    # PART ONE: 0/1 CLUSTERING.
+    # Removing zero rows from vectors lists.
+    doc_ft_vectors = [doc_vector[:features_no] for doc_vector in doc_vectors]
+    ref_ft_vectors = [ref_vector[:features_no] for ref_vector in ref_vectors]
+
+    centroid = [np.mean(np.array([vec[i] for vec in ref_ft_vectors])) for i in range(len(ref_ft_vectors[0]))]
+    init_centroids = np.array([[0] * features_no, centroid])
+
+    x = np.concatenate((doc_ft_vectors, ref_ft_vectors))
+    kmeans = KMeans(n_clusters=2, init=init_centroids).fit(x)
+
+    predicted = kmeans.predict(doc_ft_vectors)
+    for i in range(len(predicted)):
+        scores[i] = predicted[i] * weights[0]
+
+    # PART TWO: ONE CLUSTER FOR EACH REF. VECTOR
+    doc_emb_vectors = [doc_vector[features_no:] for doc_vector in doc_vectors]
+    ref_emb_vectors = [ref_vector[features_no:] for ref_vector in ref_vectors]
+
+    x = np.concatenate((doc_emb_vectors, ref_emb_vectors))
+    kmeans = KMeans(n_clusters=len(ref_emb_vectors), init=np.array(ref_emb_vectors)).fit(x)
+    centers = kmeans.cluster_centers_
+
+    each = 0
+    if each:
+        for i in range(len(doc_emb_vectors)):
+            distances = [norm(doc_emb_vectors[i] - center) for center in centers]
+            scores[i] += (1 - (min(distances) / max(distances))) * weights[1]
+    else:
+        min_distances = [min([norm(doc_emb_vector - center) for center in centers])
+                         for doc_emb_vector in doc_emb_vectors]
+        for i in range(len(doc_emb_vectors)):
+            scores[i] += (1 - (min_distances[i] / max(min_distances))) * weights[1]
+
+    return scores
+
+
+def training(doc_matrix, score_matrix, model_name):
+    set_size = int(doc_matrix.shape[0] / 2)
+    doc_size = int(doc_matrix.shape[1])
+    vector_size = int(doc_matrix.shape[2])
+
+    print('Loading data...')
+
+    x_train = doc_matrix[:set_size, :, :]
+    x_test = doc_matrix[set_size:, :, :]
+
+    y_train = score_matrix[:set_size, :]
+    y_test = score_matrix[set_size:, :]
+
+    model = Sequential()
+    model.add(Masking(mask_value=0.0, input_shape=(doc_size, vector_size)))
+    model.add(Bidirectional(LSTM(doc_size, input_shape=(doc_size, vector_size))))
+    model.add(Dense(doc_size, activation='sigmoid'))
+
+    # try using different optimizers and different optimizer configs
+    model.compile('adam', 'mse', metrics=['accuracy'])
+
+    print('Train...')
+    model.fit(x_train, y_train,
+              batch_size=1,
+              epochs=4,
+              validation_data=[x_test, y_test])
+
+    print(model.predict(doc_matrix[0:1, :, :]))
+    print(score_matrix[0])
+
+    model.save(os.getcwd() + "/models/" + model_name + ".h5")
+
+
+# Returns the predicted scores given model name and documents.
+def predict_scores(model_name, docs):
+    model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
+    return model.predict(docs)
 
 
 # Return the ROUGE evaluation given source and reference summary
-def summary_rouge_score(source_text, reference, max_length, weights, dataset_name):
+def rouge_score(summaries, references):
     # ROUGE package needs to read model(reference) and system(computed) summary from specific folders,
     # so temp files are created to store these two.
-    temp_system = open("C:/Users/Riccardo/Desktop/tesi_tmp/rouge/system_summaries/001.txt", "w+")
-    temp_model = open("C:/Users/Riccardo/Desktop/tesi_tmp/rouge/model_summaries/001.txt", "w+")
 
-    summary = summarize(source_text, max_length, weights, dataset_name)
-    print("SUMMARY" + "\n" + summary)
-    print("\n\n\n")
-    print("REFERENCE" + "\n" + reference)
-    print(summary, file=temp_system)
-    print(reference, file=temp_model)
+    system_path = "C:/Users/Riccardo/Desktop/tesi_tmp/rouge/system_summaries/"
+    model_path = "C:/Users/Riccardo/Desktop/tesi_tmp/rouge/model_summaries/"
+    #if os.path.isdir(system_path):
+    #    shutil.rmtree(system_path)
+    #if os.path.isdir(model_path):
+    #    shutil.rmtree(model_path)
+    #os.makedirs(system_path)
+    #os.makedirs(model_path)
 
-    temp_model.close()
-    temp_system.close()
+    for i in range(len(summaries)):
+        with open(system_path + str(i) + ".txt", "w") as temp_system:
+            print(summaries[i], file=temp_system)
+        with open(model_path + str(i) + ".txt", "w") as temp_model:
+            print(references[i], file=temp_model)
 
     r = Rouge155()
     r.system_dir = 'C:/Users/Riccardo/Desktop/tesi_tmp/rouge/system_summaries'
@@ -103,83 +142,129 @@ def summary_rouge_score(source_text, reference, max_length, weights, dataset_nam
     return output_dict
 
 
-def summary_clustering_score(document_vectors, summary_vectors, reference_vectors):
-    # Removing zero rows from vectors lists.
-    document_vectors = document_vectors[~np.all(document_vectors == 0, axis=1)]
-    summary_vectors = summary_vectors[~np.all(summary_vectors == 0, axis=1)]
-    reference_vectors = reference_vectors[~np.all(reference_vectors == 0, axis=1)]
+def testing(model_name, docs_pas_lists, doc_matrix, score_matrix, refs, summ_len=100):
+    max_sent_no = doc_matrix.shape[1]
 
-    vector_dim = len(document_vectors[0])
-    centroid = [np.mean(np.array([vec[i] for vec in reference_vectors])) for i in range(len(reference_vectors[0]))]
-    init_centroids = np.array([[0] * vector_dim, centroid])
-    #init_centroids = np.array([[0.49821944, 0.56260339, 0.17955776, 0.00185936, 0.50955343, 0.12072317],
-     #                          [0.69208472, 0.71773158, 0.3029794, 0.00217993, 0.67792622, 1.11437755]])
-    X = np.concatenate((document_vectors, reference_vectors))
-    kmeans = KMeans(n_clusters=2,
-                    #init=init_centroids,
-                     ).fit(X)
-    print("DOC + REF VECTORS WITH CENTROID")
-    print(kmeans.cluster_centers_)
-    print(kmeans.predict(summary_vectors))
-    print(kmeans.predict(document_vectors))
-    print(kmeans.predict(reference_vectors))
+    rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
+                    "rouge_2_precision": 0, "rouge_2_f_score": 0}
+    pred_matrix = np.zeros((len(docs_pas_lists), max_sent_no))
 
-    vec_perc = np.count_nonzero(kmeans.predict(document_vectors)) / len(document_vectors)
-    print("Original text selected pas percentage:")
-    print("{:.3%}".format(vec_perc))
+    model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
 
-    ref_perc = np.count_nonzero(kmeans.predict(reference_vectors)) / len(reference_vectors)
-    print("Reference text selected pas percentage:")
-    print("{:.3%}".format(ref_perc))
+    for i in range(len(docs_pas_lists)):
+        print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
+        pas_list = docs_pas_lists[i]
+        pas_no = len(pas_list)
+        sent_vec_len = len(pas_list[0].vector) + len(pas_list[0].embeddings)
+        doc_vectors = np.zeros((1, max_sent_no, sent_vec_len))
 
-    best_perc = np.count_nonzero(kmeans.predict(summary_vectors)) / len(summary_vectors)
-    print("Best pas selected pas percentage:")
-    print("{:.3%}".format(best_perc))
+        for j in range(max_sent_no):
+            if j < pas_no:
+                doc_vectors[0, j, :] = np.append(pas_list[j].vector, pas_list[j].embeddings)
 
-    if vec_perc + best_perc:
-        pred_score = best_perc / (vec_perc + best_perc)
-    else:
-        pred_score = 0
-    print("Correct prediction of best pas score:")
-    print("{:.3%}".format(pred_score))
-    print()
+        pred_scores = model.predict(doc_vectors)[0]
+        pred_matrix[i, :] = pred_scores
+        scores = pred_scores[:pas_no]
+        sorted_scores = [(j, scores[j]) for j in range(len(scores))]
+        sorted_scores.sort(key=lambda tup: -tup[1])
 
-    return vec_perc, ref_perc, best_perc, pred_score
+        sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
+        sorted_realized_pas = [pas_list[index].realized_pas for index in sorted_indices]
+        best_pas_list = []
+        best_indices_list = []
+        size = 0
+        j = 0
+        while size < summ_len and j < pas_no:
+            redundant_pas = find_redundant_pas(best_pas_list, sorted_realized_pas[j])
+            if redundant_pas is None:
+                size += len(sorted_realized_pas[j].split())
+                if size < summ_len:
+                    best_pas_list.append(sorted_realized_pas[j])
+                    best_indices_list.append(sorted_indices[j])
+            else:
+                if redundant_pas in best_pas_list:
+                    if size - len(redundant_pas) + len(sorted_realized_pas[j]) < summ_len:
+                        size = size - len(redundant_pas) + len(sorted_realized_pas[j])
+                        best_pas_list[best_pas_list.index(redundant_pas)] = sorted_realized_pas[j]
+                        best_indices_list[best_pas_list.index(redundant_pas)] = sorted_indices[j]
+            j += 1
+
+        best_indices_list.sort()
+
+        summary = ""
+        for index in best_indices_list:
+            summary += pas_list[index].realized_pas + ".\n"
+
+        score = rouge_score([summary], [refs[i]])
+        rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
+        rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
+        rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
+        rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
+        rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
+        rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
+
+    for k in rouge_scores.keys():
+        rouge_scores[k] /= len(docs_pas_lists)
+
+    return rouge_scores
 
 
-def summary_clustering_score_2(document_vectors, summary_vectors, reference_vectors):
-    # Removing zero rows from vectors lists.
-    document_vectors = document_vectors[~np.all(document_vectors == 0, axis=1)]
-    summary_vectors = summary_vectors[~np.all(summary_vectors == 0, axis=1)]
-    reference_vectors = reference_vectors[~np.all(reference_vectors == 0, axis=1)]
+def testing_weighted(docs_pas_lists, refs, weights, summ_len=100):
+    rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
+                    "rouge_2_precision": 0, "rouge_2_f_score": 0}
 
-    X = np.concatenate((document_vectors, reference_vectors))
-    kmeans = KMeans(n_clusters=len(reference_vectors), init=reference_vectors).fit(X)
-    print("DOC + REF VECTORS WITH CENTROID")
-    print(kmeans.predict(summary_vectors))
-    print(kmeans.predict(document_vectors))
-    print(kmeans.predict(reference_vectors))
+    for pas_list in docs_pas_lists:
+        pas_no = len(pas_list)
+        scores = [np.array(pas.vector).dot(np.array(weights)) for pas in pas_list]
+        sorted_scores = [(j, scores[j]) for j in range(len(scores))]
+        sorted_scores.sort(key=lambda tup: -tup[1])
 
-    clusters_no = np.unique(kmeans.predict(reference_vectors)).size
-    doc_clusters = kmeans.predict(document_vectors)
-    doc_coverage = np.zeros(clusters_no)
-    for i in range(clusters_no):
-        doc_coverage[i] = (doc_clusters == i).sum()
+        sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
+        sorted_realized_pas = [pas_list[index].realized_pas for index in sorted_indices]
+        best_pas_list = []
+        best_indices_list = []
+        size = 0
+        j = 0
+        while size < summ_len and j < pas_no:
+            redundant_pas = find_redundant_pas(best_pas_list, sorted_realized_pas[j])
+            if redundant_pas is None:
+                size += len(sorted_realized_pas[j].split())
+                if size < summ_len:
+                    best_pas_list.append(sorted_realized_pas[j])
+                    best_indices_list.append(sorted_indices[j])
+            else:
+                if redundant_pas in best_pas_list:
+                    if size - len(redundant_pas) + len(sorted_realized_pas[j]) < summ_len:
+                        size = size - len(redundant_pas) + len(sorted_realized_pas[j])
+                        best_pas_list[best_pas_list.index(redundant_pas)] = sorted_realized_pas[j]
+                        best_indices_list[best_pas_list.index(redundant_pas)] = sorted_indices[j]
+            j += 1
 
-    print("hello")
-    # How many clusters of reference summaries are covered with the generated summary
-    summ_coverage = np.unique(kmeans.predict(summary_vectors)).size / clusters_no
-    # Adjusted coverage takes into account the fact that the document itslef may not cover the reference summary.
-    summ_adj_coverage = np.unique(kmeans.predict(summary_vectors)).size / np.count_nonzero(doc_coverage)
+        best_indices_list.sort()
 
-    print("DOCUMENT COVERAGE:")
-    print(doc_coverage)
-    print()
+        summary = ""
+        for index in best_indices_list:
+            summary += pas_list[index].realized_pas + ".\n"
 
-    print("SUMMARY COVERAGE:")
-    print(summ_coverage)
+        score = rouge_score([summary], [refs[docs_pas_lists.index(pas_list)]])
+        rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
+        rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
+        rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
+        rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
+        rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
+        rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
 
-    print("SUMMARY ADJUSTED COVERAGE:")
-    print(summ_adj_coverage)
+    for k in rouge_scores.keys():
+        rouge_scores[k] /= len(docs_pas_lists)
+    return rouge_scores
 
-    return summ_coverage, summ_adj_coverage
+
+def find_redundant_pas(realized_pas_list, realized_pas):
+    redundant_pas = None
+    for pas in realized_pas_list:
+        if (not pas.find(realized_pas) == -1) or (not pas.find(realized_pas) == -1):
+            if len(pas) < len(realized_pas):
+                redundant_pas = pas
+            else:
+                redundant_pas = realized_pas
+    return redundant_pas

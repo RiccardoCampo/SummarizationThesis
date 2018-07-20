@@ -3,6 +3,8 @@ import string
 import unicodedata
 import time
 import pickle
+
+import nltk
 import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
@@ -12,7 +14,8 @@ from nltk.corpus import stopwords
 
 stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
-embedder = hub.Module("https://tfhub.dev/google/nnlm-en-dim128-with-normalization/1")
+embedder = hub.Module("https://tfhub.dev/google/random-nnlm-en-dim128/1")
+tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
 # Preprocessing the input text to make it ready for the SRL
 def text_cleanup(full_text):
@@ -150,3 +153,7 @@ def timer(text, start_time):
     current_time = time.time()
     print(text + str(current_time - start_time))
     return current_time
+
+
+def tokens(text):
+    return tokenizer.tokenize(text)
