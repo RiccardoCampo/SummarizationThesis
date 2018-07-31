@@ -1,14 +1,14 @@
 import os
-import shutil
 import numpy as np
 
-from keras.engine.saving import load_model
 from numpy.linalg import norm
 from sklearn.cluster import KMeans
 from pyrouge import Rouge155
 
-from keras.models import Sequential
-from keras.layers import Dense, LSTM, Bidirectional, Masking
+from keras import Input, Model
+from keras.engine.saving import load_model
+from keras import backend as K
+from keras.layers import Dense, LSTM, Bidirectional, Masking, Lambda, Activation
 
 
 # Return the best PASs of the source text given the source text, the max number of PASs and the weights.
@@ -29,8 +29,9 @@ def best_pas(pas_list, max_pas, weights):
 
 
 # Assign scores to each pas in the document
-def score_document(doc_vectors, ref_vectors, weights):
-    scores = np.zeros(len(doc_vectors))
+def score_document(doc_vectors, ref_vectors, weights, binary):
+    max_len = len(doc_vectors)
+    scores = np.zeros(max_len)
     doc_vectors = doc_vectors[~np.all(doc_vectors == 0, axis=1)]
     ref_vectors = ref_vectors[~np.all(ref_vectors == 0, axis=1)]
     features_no = 6
@@ -67,42 +68,95 @@ def score_document(doc_vectors, ref_vectors, weights):
         min_distances = [min([norm(doc_emb_vector - center) for center in centers])
                          for doc_emb_vector in doc_emb_vectors]
         for i in range(len(doc_emb_vectors)):
-            scores[i] += (1 - (min_distances[i] / max(min_distances))) * weights[1]
+            score = (1 - (min_distances[i] / max(min_distances))) * weights[1]
+            # reserving zero as a padding value.
+            scores[i] += score if score > 0 else 0.01
+
+    # Squeezing the values between 0.5 and 1 (to better refer to the sigmoid).
+    scores = [(score + (1-score)*0.5) for score in scores]
+
+    # Amplifying the magnitude.
+    # average = np.average(scores[~np.all(scores == 0)])
+    # maximum = max(scores)
+    # scores = [(((score + average)/(maximum + average)) if score > average else score) for score in scores]
+
+    # Trun scores into 1s and 0s (best 1/3 of the document)
+    if binary:
+        sorted_indexes = [(i, scores[i]) for i in range(len(scores))]
+        sorted_indexes.sort(key=lambda tup: -tup[1])
+
+        scores = np.zeros(max_len)
+        # 33% or the number of ref vectors
+        for i in range(max(int(len(doc_vectors) / 3), len(ref_vectors))):
+            scores[sorted_indexes[i][0]] = 1
 
     return scores
 
 
-def training(doc_matrix, score_matrix, model_name):
-    set_size = int(doc_matrix.shape[0] / 2)
+def training(doc_matrix, score_matrix, model_name, epochs=4):
+    set_size = int(doc_matrix.shape[0] / 2)                             # Half for training, half for validation.
     doc_size = int(doc_matrix.shape[1])
     vector_size = int(doc_matrix.shape[2])
 
     print('Loading data...')
-
     x_train = doc_matrix[:set_size, :, :]
     x_test = doc_matrix[set_size:, :, :]
-
     y_train = score_matrix[:set_size, :]
     y_test = score_matrix[set_size:, :]
 
-    model = Sequential()
-    model.add(Masking(mask_value=0.0, input_shape=(doc_size, vector_size)))
-    model.add(Bidirectional(LSTM(doc_size, input_shape=(doc_size, vector_size))))
-    model.add(Dense(doc_size, activation='sigmoid'))
+    inputs = Input(shape=(doc_size, vector_size))
+    mask = Masking(mask_value=0.0)(inputs)
 
-    # try using different optimizers and different optimizer configs
+    blstm = Bidirectional(LSTM(1, return_sequences=True), merge_mode="ave")(mask)
+    blstm = Lambda(lambda x: K.squeeze(x, -1))(blstm)
+
+    # blstm = Bidirectional(LSTM(doc_size), merge_mode="ave")(mask)
+
+    dense = Dense(doc_size)(blstm)
+    # dense = Dense(doc_size)(dense)
+
+    output = Activation("sigmoid")(dense)
+    # output = Lambda(crop)([output, inputs])
+
+    model = Model(inputs=inputs, outputs=output)
     model.compile('adam', 'mse', metrics=['accuracy'])
+
+    # print(model.predict(doc_matrix[2:3, :, :]))
+    print(model.summary())
 
     print('Train...')
     model.fit(x_train, y_train,
               batch_size=1,
-              epochs=4,
-              validation_data=[x_test, y_test])
+              epochs=epochs,
+              validation_data=[x_test, y_test],
+              verbose=2
+              )
 
-    print(model.predict(doc_matrix[0:1, :, :]))
-    print(score_matrix[0])
+    print(model.predict(doc_matrix[180:181, :, :]))
+    print(score_matrix[180])
 
     model.save(os.getcwd() + "/models/" + model_name + ".h5")
+
+
+# Crops the output(x[0]) based on the input(x[1]) padding.
+def crop(x):
+    dense = x[0]
+    inputs = x[1]
+    vector_size = 134
+
+    # Build a matrix having 1 for every non-zero vector, 0 otherwise.
+    padding = K.cast(K.not_equal(inputs, 0), dtype=K.floatx())              # Shape: BxDxV.
+    # Transposing the matrix.
+    padding = K.permute_dimensions(padding, (0, 2, 1))                      # Shape: BxVxD.
+
+    resizing = K.ones((1, vector_size))                                     # Shape: 1xV.
+    padding = K.dot(resizing, padding)                                      # Shape: Bx1xD
+    padding = K.squeeze(padding, 0)
+    # Rebuilding the vector with only 1 and 0 (as the dot will produce vector_size and 0s).
+    padding = K.cast(K.not_equal(padding, 0), dtype=K.floatx())
+
+    # Multiplying the output by the padding (thus putting to zero the padding documents).
+    return dense * padding
 
 
 # Returns the predicted scores given model name and documents.
@@ -118,12 +172,6 @@ def rouge_score(summaries, references):
 
     system_path = "C:/Users/Riccardo/Desktop/tesi_tmp/rouge/system_summaries/"
     model_path = "C:/Users/Riccardo/Desktop/tesi_tmp/rouge/model_summaries/"
-    #if os.path.isdir(system_path):
-    #    shutil.rmtree(system_path)
-    #if os.path.isdir(model_path):
-    #    shutil.rmtree(model_path)
-    #os.makedirs(system_path)
-    #os.makedirs(model_path)
 
     for i in range(len(summaries)):
         with open(system_path + str(i) + ".txt", "w") as temp_system:
@@ -142,45 +190,44 @@ def rouge_score(summaries, references):
     return output_dict
 
 
-def testing(model_name, docs_pas_lists, doc_matrix, score_matrix, refs, summ_len=100):
-    max_sent_no = doc_matrix.shape[1]
-
+# Compute rouge scores given a model.
+def testing(model_name, docs_pas_lists, doc_matrix, refs, summ_len=100):
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
-    pred_matrix = np.zeros((len(docs_pas_lists), max_sent_no))
-
     model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
 
+    # Computing the score for each document than compute the average.
     for i in range(len(docs_pas_lists)):
         print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
         pas_list = docs_pas_lists[i]
         pas_no = len(pas_list)
-        sent_vec_len = len(pas_list[0].vector) + len(pas_list[0].embeddings)
-        doc_vectors = np.zeros((1, max_sent_no, sent_vec_len))
+        doc_vectors = doc_matrix[i:i+1, :, :]
 
-        for j in range(max_sent_no):
-            if j < pas_no:
-                doc_vectors[0, j, :] = np.append(pas_list[j].vector, pas_list[j].embeddings)
-
+        # Getting the scores for each sentence predicted by the model (The predict functions accepts lists, so I use a
+        # list of 1 element and get the first result).
         pred_scores = model.predict(doc_vectors)[0]
-        pred_matrix[i, :] = pred_scores
+        # Cutting the scores to the length of the document and arrange them by score preserving the original position.
         scores = pred_scores[:pas_no]
         sorted_scores = [(j, scores[j]) for j in range(len(scores))]
         sorted_scores.sort(key=lambda tup: -tup[1])
 
+        # Get the indices of the sorted pas, then a list of the sorted realized pas.
         sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
         sorted_realized_pas = [pas_list[index].realized_pas for index in sorted_indices]
+        # Build a list of best pas excluding the redundant pas (see redundant_pas).
         best_pas_list = []
         best_indices_list = []
         size = 0
         j = 0
         while size < summ_len and j < pas_no:
             redundant_pas = find_redundant_pas(best_pas_list, sorted_realized_pas[j])
+            # If there are no redundant pas the pas is added and the size is increased.
             if redundant_pas is None:
                 size += len(sorted_realized_pas[j].split())
                 if size < summ_len:
                     best_pas_list.append(sorted_realized_pas[j])
                     best_indices_list.append(sorted_indices[j])
+            # Otherwise the redundant pas is removed.
             else:
                 if redundant_pas in best_pas_list:
                     if size - len(redundant_pas) + len(sorted_realized_pas[j]) < summ_len:
@@ -189,12 +236,14 @@ def testing(model_name, docs_pas_lists, doc_matrix, score_matrix, refs, summ_len
                         best_indices_list[best_pas_list.index(redundant_pas)] = sorted_indices[j]
             j += 1
 
+        # Sort the best indices and build the summary.
         best_indices_list.sort()
 
         summary = ""
         for index in best_indices_list:
             summary += pas_list[index].realized_pas + ".\n"
 
+        # Get the rouge scores.
         score = rouge_score([summary], [refs[i]])
         rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
         rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
@@ -209,10 +258,13 @@ def testing(model_name, docs_pas_lists, doc_matrix, score_matrix, refs, summ_len
     return rouge_scores
 
 
+# Getting the scores with the weighted method.
 def testing_weighted(docs_pas_lists, refs, weights, summ_len=100):
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
 
+    # Same operations as for the previous function except that the scores are computed by multiplying the features by
+    # the weights.
     for pas_list in docs_pas_lists:
         pas_no = len(pas_list)
         scores = [np.array(pas.vector).dot(np.array(weights)) for pas in pas_list]
@@ -259,6 +311,8 @@ def testing_weighted(docs_pas_lists, refs, weights, summ_len=100):
     return rouge_scores
 
 
+# Check if the specified pas is redundant in the given list.
+# A pas is redundant if it is contained in another pas.
 def find_redundant_pas(realized_pas_list, realized_pas):
     redundant_pas = None
     for pas in realized_pas_list:

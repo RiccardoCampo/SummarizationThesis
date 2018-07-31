@@ -1,10 +1,9 @@
 import os
-import time
 import numpy as np
 
 from nltk.stem.porter import *
 from pntl.tools import Annotator
-from utils import stem_and_stopword, tf_idf, remove_punct, timer, sentence_embeddings, centrality_scores
+from utils import stem_and_stopword, tf_idf, remove_punct, sentence_embeddings, centrality_scores
 
 SENNA_PATH = "C:/Users/Riccardo/Documents/senna"
 STANFORD_PATH = "C:/Users/Riccardo/Documents/stanford-parser"
@@ -164,7 +163,7 @@ def check_prev_verb(words, pos, index):
 # Extracts the PASs from a list of sentences (dataset name is needed to fetch the proper IDF file).
 def extract_pas(sentences, dataset_name, keep_all=False):
     # Compute the TFIDF vector of all terms in the document.
-    tf_idfs = tf_idf(sentences, os.getcwd() + "/dataset/" + dataset_name + "_idfs.txt")
+    tf_idfs = tf_idf(sentences, os.getcwd() + "/dataset/" + dataset_name + "_idfs.dat")
 
     # Longest sentence length needed afterwards for the length score.
     longest_sent_len = max(len(sent) for sent in sentences)
@@ -172,12 +171,12 @@ def extract_pas(sentences, dataset_name, keep_all=False):
     pas_list = []
     for sent in sentences:
         # Ignoring short sentences (errors).
-        if 3 < len(sent) < 1024:
+        if 3 < len(remove_punct(sent)) and len(sent) < 1024:
             sent_index = sentences.index(sent)
 
             # Substituting single apices with double apices to avoid errors with SRL.
             sent = re.sub("\'([a-zA-Z0-9])([a-zA-Z0-9 ]+)([a-zA-Z0-9])\'", r'" \1\2\3 "', sent)
-
+            print(sent)
             # Getting SRL annotations from SENNA.
             sent_srl = annotator.get_annoations(sent.split())['srl']
 
@@ -207,7 +206,6 @@ def extract_pas(sentences, dataset_name, keep_all=False):
                               raw_pas,
                               out_of_order)
                     pas_list.append(pas)
-
 
     # Completing each PAS with its realization embeddings and vector representation.
     # This process is done after the initialization as all the other pas are needed.

@@ -3,16 +3,18 @@ import os
 import pickle
 import re
 import xml.etree.ElementTree
+from time import time
+
 import numpy as np
 from numpy.random.mtrand import permutation
 
 from pas import extract_pas
 from summarization import score_document
-from utils import stem_and_stopword, text_cleanup, tokens
+from utils import stem_and_stopword, text_cleanup, tokens, timer
 
 
 # Compute idfs given a document list, storing them in the specified destination file.
-def compute_idfs(doc_list, dest_file):
+def compute_idfs(doc_list, dest_path):
     docs_number = len(doc_list)
     stems = []
     doc_stems = {}
@@ -43,7 +45,8 @@ def compute_idfs(doc_list, dest_file):
         idfs[term] = idf
         print("{:.3%}".format(term_index / terms_dim))
 
-    pickle.dump(idfs, dest_file)
+    with open(dest_path, "wb") as dest_file:
+        pickle.dump(idfs, dest_file)
 
 
 # Getting documents and respective summaries from DUC dataset from XML files.
@@ -156,12 +159,18 @@ def store_pas_duc_dataset(duc_path):
 
 
 # Getting the pas lists of documents and reference summaries.
-def get_pas_lists(batch=0):
+def get_pas_lists(dataset="duc", batch=0, min_pas=0, max_pas=100):
     dataset_path = "/dataset"
     if batch:
         dataset_path = "/dataset/batch" + str(batch)
-    doc_path = dataset_path + "/duc_docs_pas.dat"
-    ref_path = dataset_path + "/duc_refs_pas.dat"
+
+    # Selecting the paths based on the desired dataset.
+    if dataset == "duc":
+        doc_path = dataset_path + "/duc_docs_pas.dat"
+        ref_path = dataset_path + "/duc_refs_pas.dat"
+    else:
+        doc_path = dataset_path + "/nyt_docs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat"
+        ref_path = dataset_path + "/nyt_refs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat"
 
     with open(os.getcwd() + doc_path, "rb") as docs_f:
         docs_pas_lists = pickle.load(docs_f)
@@ -172,7 +181,7 @@ def get_pas_lists(batch=0):
 
 
 # Matrix representation is computed and stored.
-def store_duc_matrices(weights):
+def store_duc_matrices(weights, binary_scores=False):
     docs_pas_lists, refs_pas_lists = get_pas_lists()
 
     docs_no = len(docs_pas_lists)                                   # First dimension, documents number.
@@ -191,10 +200,13 @@ def store_duc_matrices(weights):
             if j < len(refs_pas_lists[i]):
                 refs_3d_matrix[i, j, :] = np.append(refs_pas_lists[i][j].vector, refs_pas_lists[i][j].embeddings)
 
-    # Storing the matrices in the appropriate file, depending on dataset and embedding.
+    # Storing the matrices in the appropriate file, depending on the scoring system.
     doc_path = "/dataset/duc_doc_matrix.dat"
     ref_path = "/dataset/duc_ref_matrix.dat"
-    scores_path = "/dataset/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+    if binary_scores:
+        scores_path = "/dataset/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+    else:
+        scores_path = "/dataset/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
 
     with open(os.getcwd() + doc_path, "wb") as dest_f:
         pickle.dump(docs_3d_matrix, dest_f)
@@ -203,26 +215,31 @@ def store_duc_matrices(weights):
 
     scores_matrix = np.zeros((docs_no, max_sent_no))
     for i in range(docs_no):
-        scores_matrix[i] = score_document(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :], weights)
+        scores_matrix[i] = score_document(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :],
+                                          weights, binary=binary_scores)
     with open(os.getcwd() + scores_path, "wb") as dest_f:
         pickle.dump(scores_matrix, dest_f)
 
 
 # Getting the matrices of documents and reference summaries.
-def get_matrices(weights=(0.5, 0.5), batch=0):
+def get_matrices(weights=(0.5, 0.5), batch=0, binary=False):
+    # Selecting the right path depending on the batch or binary scoring.
     dataset_path = "/dataset"
     if batch:
         dataset_path = "/dataset/batch" + str(batch)
     doc_path = dataset_path + "/duc_doc_matrix.dat"
     ref_path = dataset_path + "/duc_ref_matrix.dat"
-    scores_path = dataset_path + "/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+    if binary:
+        scores_path = dataset_path + "/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+    else:
+        scores_path = dataset_path + "/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
 
     with open(os.getcwd() + doc_path, "rb") as docs_f:
         doc_matrix = pickle.load(docs_f)
     with open(os.getcwd() + ref_path, "rb") as refs_f:
         ref_matrix = pickle.load(refs_f)
-    with open(os.getcwd() + scores_path, "rb") as refs_f:
-        score_matrix = pickle.load(refs_f)
+    with open(os.getcwd() + scores_path, "rb") as scores_f:
+        score_matrix = pickle.load(scores_f)
 
     return doc_matrix, ref_matrix, score_matrix
 
@@ -280,15 +297,13 @@ def get_nyt(nyt_path, min_doc=0, max_doc=100):
     count = 0
 
     # Dataset is divided by year, month day.
-    for year_dir in os.listdir(nyt_path):
-        for month_dir in os.listdir(nyt_path + "/" + year_dir):
-            print(year_dir + month_dir)
-            for day_dir in os.listdir(nyt_path + "/" + year_dir + "/" + month_dir + "/" + month_dir):
-                for doc_name in os.listdir(nyt_path + "/" + year_dir + "/" +
-                                           month_dir + "/" + month_dir + "/" + day_dir):
+    for year_dir in sorted(os.listdir(nyt_path)):
+        for month_dir in sorted(os.listdir(nyt_path + "/" + year_dir)):
+            for day_dir in sorted(os.listdir(nyt_path + "/" + year_dir + "/" + month_dir + "/" + month_dir)):
+                for doc_name in sorted(os.listdir(nyt_path + "/" + year_dir + "/" +
+                                                  month_dir + "/" + month_dir + "/" + day_dir)):
                     # Extracting the documents between min_doc and max_doc.
                     if min_doc <= count < max_doc:
-                        print(year_dir + "/" + month_dir + "/" + month_dir + "/" + day_dir + "/" + doc_name)
                         xml_doc = xml.etree.ElementTree.parse(nyt_path + "/" + year_dir + "/" +
                                                               month_dir + "/" + month_dir + "/" +
                                                               day_dir + "/" + doc_name).getroot()
@@ -300,11 +315,12 @@ def get_nyt(nyt_path, min_doc=0, max_doc=100):
                             doc += paragraph.text + ".\n"
 
                         summary = xml_doc.find("body/body.head/abstract/p").text
-                        docs.append(doc)
-                        summaries.append(summary)
-                        print(doc)
-                        print("==================")
-                        print(summary)
+                        # Check if the summary is non-empty and it is longer than 600.
+                        if summary:
+                            if len(summary) > 600:
+                                docs.append(doc)
+                                summaries.append(summary)
+                                print(str(count) + ") " + year_dir + "|" + month_dir + "|" + day_dir + "|" + doc_name)
                     count += 1
                     if count >= max_doc:
                         break
@@ -323,27 +339,30 @@ def store_pas_nyt_dataset(nyt_path, min_pas, max_pas):
     refs_pas_lists = []
 
     docs, references = get_nyt(nyt_path, min_pas, max_pas)
-    # For each document the pas_list is extracted after cleaning the text and tokenizing it.
-    for doc in docs:
-        print("Processing doc " + str(docs.index(doc) + min_pas) + "/400000(" + str(min_pas + max_pas) + ")")
+
+    for i in range(len(docs)):
+        start_time = time()
+        print("Processing doc " + str(i) + "/" + str(len(docs)))
+        doc = docs[i]
+        ref = references[i]
+
         doc = text_cleanup(doc)
         # Splitting sentences (by dot).
         sentences = tokens(doc)
-        pas_list = extract_pas(sentences, "duc")
-        docs_pas_lists.append(pas_list)
+        doc_pas_list = extract_pas(sentences, "nyt")
 
-    # The list of pas lists is then stored.
-    with open(os.getcwd() + "/dataset/nyt_docs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat", "wb") as dest_f:
-        pickle.dump(docs_pas_lists, dest_f)
-
-    # Same for reference summaries...
-    for ref in references:
-        print("Processing doc " + str(references.index(ref) + min_pas) + "/400000(" + str(min_pas + max_pas) + ")")
         ref = text_cleanup(ref)
         # Splitting sentences (by dot).
         sentences = tokens(ref)
-        pas_list = extract_pas(sentences, "duc", keep_all=True)
-        refs_pas_lists.append(pas_list)
+        ref_pas_list = extract_pas(sentences, "nyt", keep_all=True)
 
+        if len(doc_pas_list) > 5 and len(doc_pas_list) >= len(ref_pas_list):
+            refs_pas_lists.append(ref_pas_list)
+            docs_pas_lists.append(doc_pas_list)
+        timer(str(i) + " processed in:", start_time)
+
+    # PAS lists are stored.
     with open(os.getcwd() + "/dataset/nyt_refs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat", "wb") as dest_f:
         pickle.dump(refs_pas_lists, dest_f)
+    with open(os.getcwd() + "/dataset/nyt_docs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat", "wb") as dest_f:
+        pickle.dump(docs_pas_lists, dest_f)
