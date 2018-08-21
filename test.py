@@ -14,9 +14,11 @@ from utils import sentence_embeddings
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
+#_result_path_ = "C:/Users/Riccardo/Desktop/temp_results/results.txt"
+_result_path_ = "/home/arcslab/Documents/Riccardo_Campo/results/results.txt"
 
 
-"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
+#"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
 weights_list = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
                 [0.2, 0.1, 0.3, 0.1, 0.1, 0.2], [0.3, 0.05, 0.3, 0.1, 0.05, 0.2], [0.1, 0.05, 0.3, 0.1, 0.15, 0.2]]
@@ -44,14 +46,14 @@ for weights in weights_list:
     for k in rouge_scores.keys():
         rouge_scores[k] /= batches
 
-    with open("C:/Users/Riccardo/Desktop/temp_results/results.txt", "a") as res_file:
+    with open(_result_path_, "a") as res_file:
         print(weights, file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-"""
+#"""
 
 
-#"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)    DUC
+"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)    DUC
 weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                 (0.4, 0.6), (0.5, 0.5),(0.6, 0.4), (0.7, 0.3),
                 (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
@@ -124,8 +126,8 @@ for weights in weights_list:
                 print(k)
                 print(i)
                 print("===================================")
-#"""
-#"""
+"""
+"""
             rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
             rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
             rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
@@ -136,12 +138,12 @@ for weights in weights_list:
     for k in rouge_scores.keys():
         rouge_scores[k] /= 334 * batches
 
-    with open("C:/Users/Riccardo/Desktop/temp_results/results.txt", "a") as res_file:
+    with open(_result_path_, "a") as res_file:
         print("maximum score" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
 
-#"""
+"""
 
 """        TESTING & TRAINING DUC
 tst = False
