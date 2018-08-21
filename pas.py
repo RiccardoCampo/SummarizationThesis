@@ -163,7 +163,7 @@ def check_prev_verb(words, pos, index):
 # Extracts the PASs from a list of sentences (dataset name is needed to fetch the proper IDF file).
 def extract_pas(sentences, dataset_name, keep_all=False):
     # Compute the TFIDF vector of all terms in the document.
-    tf_idfs = tf_idf(sentences, os.getcwd() + "/dataset/" + dataset_name + "_idfs.dat")
+    tf_idfs = tf_idf(sentences, os.getcwd() + "/dataset/" + dataset_name + "/" + dataset_name + "_idfs.dat")
 
     # Longest sentence length needed afterwards for the length score.
     longest_sent_len = max(len(sent) for sent in sentences)
@@ -171,7 +171,8 @@ def extract_pas(sentences, dataset_name, keep_all=False):
     pas_list = []
     for sent in sentences:
         # Ignoring short sentences (errors).
-        if 3 < len(remove_punct(sent)) and len(sent) < 1024:
+        print(len(sent))
+        if 3 < len(remove_punct(sent)) and len(sent) < 1000:
             sent_index = sentences.index(sent)
 
             # Substituting single apices with double apices to avoid errors with SRL.

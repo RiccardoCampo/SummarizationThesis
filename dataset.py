@@ -1,7 +1,9 @@
+import gc
 import math
 import os
 import pickle
 import re
+import sys
 import xml.etree.ElementTree
 from time import time
 
@@ -50,7 +52,7 @@ def compute_idfs(doc_list, dest_path):
 
 
 # Getting documents and respective summaries from DUC dataset from XML files.
-def get_duc(duc_path, batch=0):
+def get_duc(duc_path):
     docs = []
     summaries = []
     doc_names = []
@@ -115,14 +117,6 @@ def get_duc(duc_path, batch=0):
                 if elem.get("DOCREF") == doc_name:
                     summaries.append(elem.text.replace("\n", " "))
 
-    # Shuffles the documents loading the indices.
-    if batch:
-        with open(os.getcwd() + "/dataset/batch" + str(batch) + "/indexes.dat", "rb") as docs_f:
-            indexes = pickle.load(docs_f)
-        summaries = [summaries[i] for i in indexes]
-        docs = [docs[i] for i in indexes]
-        doc_names = [doc_names[i] for i in indexes]
-
     return docs, summaries, doc_names
 
 
@@ -142,7 +136,7 @@ def store_pas_duc_dataset(duc_path):
         docs_pas_lists.append(pas_list)
 
     # The list of pas lists is then stored.
-    with open(os.getcwd() + "/dataset/duc_docs_pas.dat", "wb") as dest_f:
+    with open(os.getcwd() + "/dataset/duc/duc_docs_pas.dat", "wb") as dest_f:
         pickle.dump(docs_pas_lists, dest_f)
         
     # Same for reference summaries...
@@ -154,23 +148,14 @@ def store_pas_duc_dataset(duc_path):
         pas_list = extract_pas(sentences, "duc", keep_all=True)
         refs_pas_lists.append(pas_list)
 
-    with open(os.getcwd() + "/dataset/duc_refs_pas.dat", "wb") as dest_f:
+    with open(os.getcwd() + "/dataset/duc/duc_refs_pas.dat", "wb") as dest_f:
         pickle.dump(refs_pas_lists, dest_f)
 
 
 # Getting the pas lists of documents and reference summaries.
-def get_pas_lists(dataset="duc", batch=0, min_pas=0, max_pas=100):
-    dataset_path = "/dataset"
-    if batch:
-        dataset_path = "/dataset/batch" + str(batch)
-
-    # Selecting the paths based on the desired dataset.
-    if dataset == "duc":
-        doc_path = dataset_path + "/duc_docs_pas.dat"
-        ref_path = dataset_path + "/duc_refs_pas.dat"
-    else:
-        doc_path = dataset_path + "/nyt_docs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat"
-        ref_path = dataset_path + "/nyt_refs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat"
+def get_duc_pas_lists():
+    doc_path = "/dataset/duc/duc_docs_pas.dat"
+    ref_path = "/dataset/duc/duc_refs_pas.dat"
 
     with open(os.getcwd() + doc_path, "rb") as docs_f:
         docs_pas_lists = pickle.load(docs_f)
@@ -178,116 +163,6 @@ def get_pas_lists(dataset="duc", batch=0, min_pas=0, max_pas=100):
         refs_pas_lists = pickle.load(refs_f)
 
     return docs_pas_lists, refs_pas_lists
-
-
-# Matrix representation is computed and stored.
-def store_duc_matrices(weights, binary_scores=False):
-    docs_pas_lists, refs_pas_lists = get_pas_lists()
-
-    docs_no = len(docs_pas_lists)                                   # First dimension, documents number.
-    max_sent_no = max([len(doc) for doc in docs_pas_lists])         # Second dimension, max document length (sparse).
-    # Third dimension, vector representation dimension.
-    sent_vec_len = len(docs_pas_lists[0][0].vector) + len(docs_pas_lists[0][0].embeddings)
-
-    # The matrix are initialized as zeros, then they'll filled in with vectors for each docs' sentence.
-    docs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
-    refs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
-
-    for i in range(docs_no):
-        for j in range(max_sent_no):
-            if j < len(docs_pas_lists[i]):
-                docs_3d_matrix[i, j, :] = np.append(docs_pas_lists[i][j].vector, docs_pas_lists[i][j].embeddings)
-            if j < len(refs_pas_lists[i]):
-                refs_3d_matrix[i, j, :] = np.append(refs_pas_lists[i][j].vector, refs_pas_lists[i][j].embeddings)
-
-    # Storing the matrices in the appropriate file, depending on the scoring system.
-    doc_path = "/dataset/duc_doc_matrix.dat"
-    ref_path = "/dataset/duc_ref_matrix.dat"
-    if binary_scores:
-        scores_path = "/dataset/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
-    else:
-        scores_path = "/dataset/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
-
-    with open(os.getcwd() + doc_path, "wb") as dest_f:
-        pickle.dump(docs_3d_matrix, dest_f)
-    with open(os.getcwd() + ref_path, "wb") as dest_f:
-        pickle.dump(refs_3d_matrix, dest_f)
-
-    scores_matrix = np.zeros((docs_no, max_sent_no))
-    for i in range(docs_no):
-        scores_matrix[i] = score_document(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :],
-                                          weights, binary=binary_scores)
-    with open(os.getcwd() + scores_path, "wb") as dest_f:
-        pickle.dump(scores_matrix, dest_f)
-
-
-# Getting the matrices of documents and reference summaries.
-def get_matrices(weights=(0.5, 0.5), batch=0, binary=False):
-    # Selecting the right path depending on the batch or binary scoring.
-    dataset_path = "/dataset"
-    if batch:
-        dataset_path = "/dataset/batch" + str(batch)
-    doc_path = dataset_path + "/duc_doc_matrix.dat"
-    ref_path = dataset_path + "/duc_ref_matrix.dat"
-    if binary:
-        scores_path = dataset_path + "/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
-    else:
-        scores_path = dataset_path + "/duc_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
-
-    with open(os.getcwd() + doc_path, "rb") as docs_f:
-        doc_matrix = pickle.load(docs_f)
-    with open(os.getcwd() + ref_path, "rb") as refs_f:
-        ref_matrix = pickle.load(refs_f)
-    with open(os.getcwd() + scores_path, "rb") as scores_f:
-        score_matrix = pickle.load(scores_f)
-
-    return doc_matrix, ref_matrix, score_matrix
-
-
-# Shuffles the matrices and pas lists with a random permutation (and stores the permutation)
-def shuffle_data(batch):
-    docs_pas_lists, refs_pas_lists = get_pas_lists()
-    doc_matrix, ref_matrix, _ = get_matrices()
-
-    batch_path = "/dataset/batch" + str(batch)
-
-    # Compute and store permutation.
-    dataset_size = len(docs_pas_lists)
-    indexes = permutation(dataset_size)
-    with open(os.getcwd() + batch_path + "/indexes.dat", "wb") as dest_f:
-        pickle.dump(indexes, dest_f)
-
-    # Shuffle and store pas lists.
-    docs_pas_lists = [docs_pas_lists[i] for i in indexes]
-    refs_pas_lists = [refs_pas_lists[i] for i in indexes]
-    with open(os.getcwd() + batch_path + "/duc_docs_pas.dat", "wb") as dest_f:
-        pickle.dump(docs_pas_lists, dest_f)
-    with open(os.getcwd() + batch_path + "/duc_refs_pas.dat", "wb") as dest_f:
-        pickle.dump(refs_pas_lists, dest_f)
-
-    # Shuffle and store matrices
-    shuffled_doc_matrix = np.zeros(doc_matrix.shape)
-    shuffled_ref_matrix = np.zeros(ref_matrix.shape)
-    for i in range(dataset_size):
-        shuffled_doc_matrix[i, :, :] = doc_matrix[indexes[i], :, :]
-        shuffled_ref_matrix[i, :, :] = ref_matrix[indexes[i], :, :]
-    with open(os.getcwd() + batch_path + "/duc_doc_matrix.dat", "wb") as dest_f:
-        pickle.dump(shuffled_doc_matrix, dest_f)
-    with open(os.getcwd() + batch_path + "/duc_ref_matrix.dat", "wb") as dest_f:
-        pickle.dump(shuffled_ref_matrix, dest_f)
-
-    # Same for every score matrix.
-    weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
-                    (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
-                    (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
-    for weights in weights_list:
-        _, _, scores_matrix = get_matrices(weights=weights)
-        shuffled_scores_matrix = np.zeros(scores_matrix.shape)
-        for i in range(dataset_size):
-            shuffled_scores_matrix[i, :] = scores_matrix[indexes[i], :]
-        with open(os.getcwd() + batch_path + "/duc_score_matrix" + str(weights[0]) + "-" +
-                  str(weights[1]) + ".dat", "wb") as dest_f:
-            pickle.dump(shuffled_scores_matrix, dest_f)
 
 
 # Retrieve New York Times corpus documents and summaries.
@@ -334,6 +209,7 @@ def get_nyt(nyt_path, min_doc=0, max_doc=100):
 
 
 # Load NYT documents and summaries, process them and store them.
+# Process a number of documents between min_pas and max_pas.
 def store_pas_nyt_dataset(nyt_path, min_pas, max_pas):
     docs_pas_lists = []
     refs_pas_lists = []
@@ -362,7 +238,219 @@ def store_pas_nyt_dataset(nyt_path, min_pas, max_pas):
         timer(str(i) + " processed in:", start_time)
 
     # PAS lists are stored.
-    with open(os.getcwd() + "/dataset/nyt_refs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat", "wb") as dest_f:
+    with open(os.getcwd() + "/dataset/nyt/nyt_refs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat", "wb") as dest_f:
         pickle.dump(refs_pas_lists, dest_f)
-    with open(os.getcwd() + "/dataset/nyt_docs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat", "wb") as dest_f:
+    with open(os.getcwd() + "/dataset/nyt/nyt_docs" + str(min_pas) + "-" + str(max_pas) + "_pas.dat", "wb") as dest_f:
         pickle.dump(docs_pas_lists, dest_f)
+
+
+# Putting pas lists in files of fixed length and without excessively long documents.
+def arrange_nyt_pas_lists(dim=1000, max_len=300, max_file=340000):
+    end_of_docs = False
+    batch = 0
+    while not end_of_docs:
+        # Setting start and end index of the pas to compact.
+        start = dim * batch
+        end = start + dim
+        print("Batch " + str(batch) + " (" + str(start) + "-" + str(end) + ")")
+
+        docs_pas_lists = []
+        refs_pas_lists = []
+
+        docs_no = 0
+        for i in range(0, max_file, 10000):
+            # Loading documents until the end is reached.
+            if docs_no < end:
+                with open(os.getcwd() + "/dataset/nyt/raw/nyt_docs" + str(i) + "-" + str(i + 10000) + "_pas.dat", "rb") as docs_f:
+                    temp_docs = pickle.load(docs_f)
+                with open(os.getcwd() + "/dataset/nyt/raw/nyt_refs" + str(i) + "-" + str(i + 10000) + "_pas.dat", "rb") as refs_f:
+                    temp_refs = pickle.load(refs_f)
+                temp_docs_len = len(temp_docs)
+                # Clear the documents with exceeding length and respective summaries.
+                j = 0
+                while j < temp_docs_len:
+                    if len(temp_docs[j]) > max_len or \
+                            len(temp_docs[j]) < len(temp_refs[j]) or \
+                            len(temp_refs[j]) <= 0:
+                        del temp_refs[j]
+                        del temp_docs[j]
+                    else:
+                        j += 1
+                    temp_docs_len = len(temp_docs)
+
+                # Of the current file retain the documents from the starting point until the end is reached.
+                if docs_no + temp_docs_len > start:
+                    print("file " + str(i) + " with dim: " + str(temp_docs_len))
+                    print("used from " + str(max(start - docs_no, 0)) + " to " + str(min(end - docs_no, temp_docs_len)))
+
+                    temp_docs = temp_docs[max(start - docs_no, 0): min(end - docs_no, temp_docs_len)]
+                    temp_refs = temp_refs[max(start - docs_no, 0): min(end - docs_no, temp_docs_len)]
+                    temp_docs_len = len(temp_docs) + max(start - docs_no, 0)
+
+                    docs_pas_lists.extend(temp_docs)
+                    refs_pas_lists.extend(temp_refs)
+
+                    print("batch " + str(batch) + " has now " + str(docs_no + temp_docs_len - start) + " documents")
+                docs_no += temp_docs_len
+            else:
+                if i == max_file - 10000:
+                    end_of_docs = True
+                break
+
+        with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_docs_pas" + str(batch) + ".dat", "wb") as dest_f:
+            pickle.dump(docs_pas_lists, dest_f)
+        with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_refs_pas" + str(batch) + ".dat", "wb") as dest_f:
+            pickle.dump(refs_pas_lists, dest_f)
+
+        batch += 1
+
+
+# Getting the pas lists of documents and reference summaries. The index represent the batch of compact pas to get.
+def get_nyt_pas_lists(index=0):
+    with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_docs_pas" + str(index) + ".dat", "rb") as docs_f:
+        docs_pas_lists = pickle.load(docs_f)
+    with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_refs_pas" + str(index) + ".dat", "rb") as refs_f:
+        refs_pas_lists = pickle.load(refs_f)
+    return docs_pas_lists, refs_pas_lists
+
+
+# Get the reference summaries starting from the reference pas (each pas contain the original sentence from which it has
+# been extracted, there can be multiple pas with the same sentence).
+def get_refs_from_pas(pas_lists):
+    refs = []
+    for pas_list in pas_lists:
+        sentences = []
+        for pas in pas_list:
+            if pas.sentence not in sentences:
+                sentences.append(pas.sentence)
+
+        ref = ""
+        for sent in sentences:
+            ref += sent + ". "
+
+        refs.append(ref)
+
+    return refs
+
+
+# Matrix representation is computed and stored.
+def store_matrices(dataset, weights, binary_scores=False, index=0):
+    if dataset == "duc":
+        docs_pas_lists, refs_pas_lists = get_duc_pas_lists()
+        dataset_path = "/dataset/duc/duc"
+    else:
+        docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
+        dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
+
+    # Storing the matrices in the appropriate file, depending on the scoring system.
+    doc_path = dataset_path + "_doc_matrix.dat"
+    ref_path = dataset_path + "_ref_matrix.dat"
+    if binary_scores:
+        scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+    else:
+        scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+
+    docs_no = len(docs_pas_lists)                                   # First dimension, documents number.
+    # Second dimension, max document length (sparse), fixed in case of nyt.
+    max_sent_no = max([len(doc) for doc in docs_pas_lists]) if dataset == "duc" else 300
+    # Third dimension, vector representation dimension.
+    sent_vec_len = len(docs_pas_lists[0][0].vector) + len(docs_pas_lists[0][0].embeddings)
+
+    # The matrix are initialized as zeros, then they'll filled in with vectors for each docs' sentence.
+    refs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
+    docs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
+
+    for i in range(docs_no):
+        for j in range(max_sent_no):
+            if j < len(docs_pas_lists[i]):
+                docs_3d_matrix[i, j, :] = np.append(docs_pas_lists[i][j].vector, docs_pas_lists[i][j].embeddings)
+            if j < len(refs_pas_lists[i]):
+                refs_3d_matrix[i, j, :] = np.append(refs_pas_lists[i][j].vector, refs_pas_lists[i][j].embeddings)
+
+    with open(os.getcwd() + ref_path, "wb") as dest_f:
+        pickle.dump(refs_3d_matrix, dest_f)
+    with open(os.getcwd() + doc_path, "wb") as dest_f:
+        pickle.dump(docs_3d_matrix, dest_f)
+
+    scores_matrix = np.zeros((docs_no, max_sent_no))
+    for i in range(docs_no):
+        scores_matrix[i] = score_document(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :],
+                                          weights, binary=binary_scores)
+    with open(os.getcwd() + scores_path, "wb") as dest_f:
+        pickle.dump(scores_matrix, dest_f)
+
+
+# Getting the matrices of documents and reference summaries.
+def get_matrices(weights, binary=False, index=-1):
+    # Selecting the right path depending on the batch or binary scoring.
+    if index < 0:
+        dataset_path = "/dataset/duc/duc"
+        doc_path = dataset_path + "_doc_matrix.dat"
+        ref_path = dataset_path + "_ref_matrix.dat"
+        if binary:
+            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+        else:
+            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+    else:
+        dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
+        doc_path = dataset_path + "_doc_matrix.dat"
+        ref_path = dataset_path + "_ref_matrix.dat"
+        if binary:
+            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+        else:
+            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+
+    with open(os.getcwd() + doc_path, "rb") as docs_f:
+        doc_matrix = pickle.load(docs_f)
+    with open(os.getcwd() + ref_path, "rb") as refs_f:
+        ref_matrix = pickle.load(refs_f)
+    with open(os.getcwd() + scores_path, "rb") as scores_f:
+        score_matrix = pickle.load(scores_f)
+
+    return doc_matrix, ref_matrix, score_matrix
+
+
+# Shuffles the matrices and pas lists with a random permutation (and stores the permutation)
+def shuffle_data(batch):
+    docs_pas_lists, refs_pas_lists = get_duc_pas_lists()
+    doc_matrix, ref_matrix, _ = get_matrices("duc")
+
+    batch_path = "/dataset/batch" + str(batch)
+
+    # Compute and store permutation.
+    dataset_size = len(docs_pas_lists)
+    indexes = permutation(dataset_size)
+    with open(os.getcwd() + batch_path + "/indexes.dat", "wb") as dest_f:
+        pickle.dump(indexes, dest_f)
+
+    # Shuffle and store pas lists.
+    docs_pas_lists = [docs_pas_lists[i] for i in indexes]
+    refs_pas_lists = [refs_pas_lists[i] for i in indexes]
+    with open(os.getcwd() + batch_path + "/duc_docs_pas.dat", "wb") as dest_f:
+        pickle.dump(docs_pas_lists, dest_f)
+    with open(os.getcwd() + batch_path + "/duc_refs_pas.dat", "wb") as dest_f:
+        pickle.dump(refs_pas_lists, dest_f)
+
+    # Shuffle and store matrices
+    shuffled_doc_matrix = np.zeros(doc_matrix.shape)
+    shuffled_ref_matrix = np.zeros(ref_matrix.shape)
+    for i in range(dataset_size):
+        shuffled_doc_matrix[i, :, :] = doc_matrix[indexes[i], :, :]
+        shuffled_ref_matrix[i, :, :] = ref_matrix[indexes[i], :, :]
+    with open(os.getcwd() + batch_path + "/duc_doc_matrix.dat", "wb") as dest_f:
+        pickle.dump(shuffled_doc_matrix, dest_f)
+    with open(os.getcwd() + batch_path + "/duc_ref_matrix.dat", "wb") as dest_f:
+        pickle.dump(shuffled_ref_matrix, dest_f)
+
+    # Same for every score matrix.
+    weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                    (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
+                    (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+    for weights in weights_list:
+        _, _, scores_matrix = get_matrices(weights=weights)
+        shuffled_scores_matrix = np.zeros(scores_matrix.shape)
+        for i in range(dataset_size):
+            shuffled_scores_matrix[i, :] = scores_matrix[indexes[i], :]
+        with open(os.getcwd() + batch_path + "/duc_score_matrix" + str(weights[0]) + "-" +
+                  str(weights[1]) + ".dat", "wb") as dest_f:
+            pickle.dump(shuffled_scores_matrix, dest_f)
