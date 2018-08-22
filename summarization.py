@@ -170,8 +170,8 @@ def rouge_score(summaries, references):
     # ROUGE package needs to read model(reference) and system(computed) summary from specific folders,
     # so temp files are created to store these two.
 
-    system_path = "C:/Users/Riccardo/Desktop/tesi_tmp/rouge/system_summaries/"
-    model_path = "C:/Users/Riccardo/Desktop/tesi_tmp/rouge/model_summaries/"
+    system_path = os.getcwd() + "/temp/system_summaries/"
+    model_path = os.getcwd() + "/temp/model_summaries/"
 
     for i in range(len(summaries)):
         with open(system_path + str(i) + ".txt", "w") as temp_system:
@@ -180,8 +180,8 @@ def rouge_score(summaries, references):
             print(references[i], file=temp_model)
 
     r = Rouge155()
-    r.system_dir = 'C:/Users/Riccardo/Desktop/tesi_tmp/rouge/system_summaries'
-    r.model_dir = 'C:/Users/Riccardo/Desktop/tesi_tmp/rouge/model_summaries'
+    r.system_dir = system_path
+    r.model_dir = model_path
     r.system_filename_pattern = '(\d+).txt'
     r.model_filename_pattern = '(\d+).txt'
 
