@@ -13,9 +13,11 @@ from utils import sentence_embeddings
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
-#_result_path_ = "C:/Users/Riccardo/Desktop/temp_results/results.txt"
-_result_path_ = "/home/arcslab/Documents/Riccardo_Campo/results/results.txt"
 
+if os.name == "posix":
+    _result_path_ = "/home/arcslab/Documents/Riccardo_Campo/results/results.txt"
+else:
+    _result_path_ = "C:/Users/Riccardo/Desktop/temp_results/results.txt"
 
 #"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
 weights_list = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],

@@ -5,8 +5,12 @@ from nltk.stem.porter import *
 from pntl.tools import Annotator
 from utils import stem_and_stopword, tf_idf, remove_punct, sentence_embeddings, centrality_scores
 
-SENNA_PATH = "C:/Users/Riccardo/Documents/senna"
-STANFORD_PATH = "C:/Users/Riccardo/Documents/stanford-parser"
+if os.name == "posix":
+    SENNA_PATH = "/home/arcslab/Documents/Riccardo_Campo/tools/senna"
+    STANFORD_PATH = "/home/arcslab/Documents/Riccardo_Campo/tools/stanford-parser"
+else:
+    SENNA_PATH = "C:/Users/Riccardo/Documents/senna"
+    STANFORD_PATH = "C:/Users/Riccardo/Documents/stanford-parser"
 
 # Initializing the annotator with the specified paths.
 annotator = Annotator(senna_dir=SENNA_PATH, stp_dir=STANFORD_PATH)
