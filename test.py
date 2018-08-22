@@ -1,5 +1,4 @@
 import os
-import winsound
 import pickle
 import re
 import tensorflow_hub as hub
@@ -180,12 +179,6 @@ for i in range(0, 10):
                 print(model_name, file=res_file)
                 print(score, file=res_file)
                 print("=================================================", file=res_file)
-"""
-
-"""
-duration = 1000  # millisecond
-freq = 440  # Hz
-winsound.Beep(freq, duration)
 """
 
 """     DUMMY DATA  
