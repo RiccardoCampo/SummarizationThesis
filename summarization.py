@@ -180,7 +180,7 @@ def rouge_score(summaries, references):
             print(references[i], file=temp_model)
 
     if os.name == "posix":
-        r = Rouge155("home/arcslab/Riccardo_Campo/tools/ROUGE-1.5.5")
+        r = Rouge155("/home/arcslab/Documents/Riccardo_Campo/tools/ROUGE-1.5.5")
     else:
         r = Rouge155()
     r.system_dir = system_path
