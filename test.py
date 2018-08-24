@@ -248,9 +248,8 @@ for weights in weights_list:
             rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
 
-        print(rouge_score)
         with open(_result_path_, "a") as res_file:
             print(model_name, file=res_file)
-            print(rouge_score, file=res_file)
+            print(rouge_scores, file=res_file)
             print("=================================================", file=res_file)
 #"""
