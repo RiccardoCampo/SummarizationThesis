@@ -8,7 +8,7 @@ import logging
 
 from dataset import get_matrices, get_duc, shuffle_data, get_nyt, \
     store_pas_nyt_dataset, compute_idfs, store_matrices, get_nyt_pas_lists, arrange_nyt_pas_lists, get_refs_from_pas
-from summarization import training, testing, testing_weighted, find_redundant_pas, rouge_score
+from summarization import testing, testing_weighted, find_redundant_pas, rouge_score, build_model, train_model
 from utils import sentence_embeddings
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
@@ -19,7 +19,7 @@ if os.name == "posix":
 else:
     _result_path_ = "C:/Users/Riccardo/Desktop/temp_results/results.txt"
 
-#"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
+"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
 weights_list = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
                 [0.2, 0.1, 0.3, 0.1, 0.1, 0.2], [0.3, 0.05, 0.3, 0.1, 0.05, 0.2], [0.1, 0.05, 0.3, 0.1, 0.15, 0.2]]
@@ -51,7 +51,7 @@ for weights in weights_list:
         print(weights, file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-#"""
+"""
 
 
 """        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)    DUC
@@ -199,25 +199,52 @@ scores = np.array([[1.0, 2.0, 0.0],
 training(docs, scores, "DUMMY", epochs=10)
 """
 
-"""
-docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=0)
-refs = get_refs_from_pas(refs_pas_lists)
+#"""        TESTING & TRAINING NYT
+tst = True
+trn = True
+binary = False
+weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
+                (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+batches = 15
+training_no = 666                   # includes validation.
+doc_size = 300
+vector_size = 134
 
-training_no = 666  # includes validation.
+for weights in weights_list:
+    model_name = "nyt_first" + str(weights)
 
-docs_pas_lists = docs_pas_lists[training_no:]
-refs_pas_lists = refs_pas_lists[training_no:]
-refs = refs[training_no:]
-index = 99
-for pas in docs_pas_lists[index]:
-    print(pas.realized_pas)
+    if trn:
+        model = build_model(doc_size, vector_size)
+        for index in range(batches):
+            doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
+            docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
+            refs = get_refs_from_pas(refs_pas_lists)
 
-print("==============================")
-for pas in refs_pas_lists[index]:
-    print(pas.realized_pas)
+            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=1)
 
-print("==============================")
-print(refs[index])
-"""
+    if tst:
+        rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
+                        "rouge_2_precision": 0, "rouge_2_f_score": 0}
+        for index in range(batches):
+            doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
+            docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
+            refs = get_refs_from_pas(refs_pas_lists)
+            score = testing(model_name,
+                            docs_pas_lists[training_no:],
+                            doc_matrix[training_no:, :, :],
+                            refs[training_no:])
 
-#arrange_nyt_pas_lists()
+            rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
+            rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
+            rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
+            rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
+            rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
+            rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
+
+        print(rouge_score)
+        with open("C:/Users/Riccardo/Desktop/temp_results/results.txt", "a") as res_file:
+            print(model_name, file=res_file)
+            print(rouge_score, file=res_file)
+            print("=================================================", file=res_file)
+#"""

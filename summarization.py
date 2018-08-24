@@ -93,17 +93,8 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
     return scores
 
 
-def training(doc_matrix, score_matrix, model_name, epochs=4):
-    set_size = int(doc_matrix.shape[0] / 2)                             # Half for training, half for validation.
-    doc_size = int(doc_matrix.shape[1])
-    vector_size = int(doc_matrix.shape[2])
-
-    print('Loading data...')
-    x_train = doc_matrix[:set_size, :, :]
-    x_test = doc_matrix[set_size:, :, :]
-    y_train = score_matrix[:set_size, :]
-    y_test = score_matrix[set_size:, :]
-
+# Initialize and compile a model for the specific dimensions.
+def build_model(doc_size, vector_size):
     inputs = Input(shape=(doc_size, vector_size))
     mask = Masking(mask_value=0.0)(inputs)
 
@@ -124,18 +115,32 @@ def training(doc_matrix, score_matrix, model_name, epochs=4):
     # print(model.predict(doc_matrix[2:3, :, :]))
     print(model.summary())
 
+    return model
+
+
+# Train a pre-compiled model with the provided inputs.
+def train_model(model, model_name, doc_matrix, score_matrix, epochs=4, save_model=False):
+    set_size = int(doc_matrix.shape[0] / 2)                             # Half for training, half for validation.
+
+    print('Loading data...')
+    x_train = doc_matrix[:set_size, :, :]
+    x_test = doc_matrix[set_size:, :, :]
+    y_train = score_matrix[:set_size, :]
+    y_test = score_matrix[set_size:, :]
+
     print('Train...')
     model.fit(x_train, y_train,
               batch_size=1,
               epochs=epochs,
               validation_data=[x_test, y_test],
-              verbose=2
+              #verbose=2
               )
 
     print(model.predict(doc_matrix[180:181, :, :]))
     print(score_matrix[180])
 
-    model.save(os.getcwd() + "/models/" + model_name + ".h5")
+    if save_model:
+        model.save(os.getcwd() + "/models/" + model_name + ".h5")
 
 
 # Crops the output(x[0]) based on the input(x[1]) padding.
