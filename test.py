@@ -177,7 +177,7 @@ for i in range(0, 10):
                             doc_matrix[training_no:, :, :],
                             refs[training_no:])
             print(score)
-            with open("C:/Users/Riccardo/Desktop/temp_results/results.txt", "a") as res_file:
+            with open(_result_path_, "a") as res_file:
                 print(model_name, file=res_file)
                 print(score, file=res_file)
                 print("=================================================", file=res_file)
@@ -249,7 +249,7 @@ for weights in weights_list:
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
 
         print(rouge_score)
-        with open("C:/Users/Riccardo/Desktop/temp_results/results.txt", "a") as res_file:
+        with open(_result_path_, "a") as res_file:
             print(model_name, file=res_file)
             print(rouge_score, file=res_file)
             print("=================================================", file=res_file)
