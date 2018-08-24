@@ -213,6 +213,7 @@ vector_size = 134
 
 for weights in weights_list:
     model_name = "nyt_first" + str(weights)
+    save_model = False
 
     if trn:
         model = build_model(doc_size, vector_size)
@@ -221,7 +222,10 @@ for weights in weights_list:
             docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
             refs = get_refs_from_pas(refs_pas_lists)
 
-            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=1)
+            if index == batches - 1:
+                save_model = True
+
+            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=1, save_model=save_model)
 
     if tst:
         rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
