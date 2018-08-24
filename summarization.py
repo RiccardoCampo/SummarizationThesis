@@ -106,7 +106,7 @@ def build_model(doc_size, vector_size):
     dense = Dense(doc_size)(blstm)
     # dense = Dense(doc_size)(dense)
 
-    output = Activation("sigmoid")(dense)
+    output = Activation("relu")(dense)
     # output = Lambda(crop)([output, inputs])
 
     model = Model(inputs=inputs, outputs=output)
@@ -136,8 +136,8 @@ def train_model(model, model_name, doc_matrix, score_matrix, epochs=4, save_mode
               #verbose=2
               )
 
-    print(model.predict(doc_matrix[180:181, :, :]))
-    print(score_matrix[180])
+    #print(model.predict(doc_matrix[180:181, :, :]))
+    #print(score_matrix[180])
 
     if save_model:
         model.save(os.getcwd() + "/models/" + model_name + ".h5")

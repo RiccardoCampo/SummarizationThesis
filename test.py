@@ -225,6 +225,8 @@ for weights in weights_list:
             if index == batches - 1:
                 save_model = True
 
+            print(weights)
+            print("index: " + str(index))
             train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=1, save_model=save_model)
 
     if tst:
