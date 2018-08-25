@@ -203,9 +203,10 @@ training(docs, scores, "DUMMY", epochs=10)
 tst = True
 trn = True
 binary = False
-weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
-                (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
-                (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+weights_list = [#(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                #(0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
+                #(0.8, 0.2), (0.9, 0.1), (1.0, 0.0)
+                (0.5, 0.5)]
 batches = 15
 training_no = 666                   # includes validation.
 doc_size = 300
@@ -227,7 +228,7 @@ for weights in weights_list:
 
             print(weights)
             print("index: " + str(index))
-            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=1, save_model=save_model)
+            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=5, save_model=save_model)
 
     if tst:
         rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
@@ -247,6 +248,9 @@ for weights in weights_list:
             rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
             rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
+
+        for k in rouge_scores.keys():
+            rouge_scores[k] /= batches
 
         with open(_result_path_, "a") as res_file:
             print(model_name, file=res_file)
