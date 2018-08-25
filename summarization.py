@@ -119,7 +119,7 @@ def build_model(doc_size, vector_size):
 
 
 # Train a pre-compiled model with the provided inputs.
-def train_model(model, model_name, doc_matrix, score_matrix, epochs=4, save_model=False):
+def train_model(model, model_name, doc_matrix, score_matrix, epochs=1, batch_size=1, save_model=False):
     set_size = int(doc_matrix.shape[0] / 2)                             # Half for training, half for validation.
 
     print('Loading data...')
@@ -130,7 +130,7 @@ def train_model(model, model_name, doc_matrix, score_matrix, epochs=4, save_mode
 
     print('Train...')
     model.fit(x_train, y_train,
-              batch_size=1,
+              batch_size=batch_size,
               epochs=epochs,
               validation_data=[x_test, y_test],
               #verbose=2

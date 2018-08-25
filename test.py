@@ -228,7 +228,7 @@ for weights in weights_list:
 
             print(weights)
             print("index: " + str(index))
-            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=5, save_model=save_model)
+            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=20, batch_size=30, save_model=save_model)
 
     if tst:
         rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
