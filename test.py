@@ -19,7 +19,7 @@ def test(model_name):
     training_no = 666  # includes validation.
 
     for weights in weights_list:
-        model_name += str(weights)
+        model_name += "_" + str(weights)
         rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                         "rouge_2_precision": 0, "rouge_2_f_score": 0}
         for index in range(batches):

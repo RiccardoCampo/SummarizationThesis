@@ -15,7 +15,7 @@ def train(model_name, batch_size, epochs):
     vector_size = 134
 
     for weights in weights_list:
-        model_name += str(weights)
+        model_name += "_" + str(batch_size) + "_" + str(epochs) + "_" + str(weights)
         save_model = False
 
         model = build_model(doc_size, vector_size)
