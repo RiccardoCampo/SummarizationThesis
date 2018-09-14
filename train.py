@@ -33,6 +33,6 @@ def train(model_name, batch_size, epochs):
 
 if __name__ == "__main__":
     name = str(sys.argv[1])
-    bs = sys.argv[2]
-    ep = sys.argv[3]
+    bs = int(sys.argv[2])
+    ep = int(sys.argv[3])
     train(name, bs, ep)
