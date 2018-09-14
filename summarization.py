@@ -1,4 +1,6 @@
 import os
+import pickle
+
 import numpy as np
 
 from numpy.linalg import norm
@@ -73,7 +75,7 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
             scores[i] += score if score > 0 else 0.01
 
     # Squeezing the values between 0.5 and 1 (to better refer to the sigmoid).
-    scores = [(score + (1-score)*0.5) for score in scores]
+    scores = [(score + (1 - score) * 0.5) for score in scores]
 
     # Amplifying the magnitude.
     # average = np.average(scores[~np.all(scores == 0)])
@@ -120,7 +122,7 @@ def build_model(doc_size, vector_size):
 
 # Train a pre-compiled model with the provided inputs.
 def train_model(model, model_name, doc_matrix, score_matrix, epochs=1, batch_size=1, save_model=False):
-    set_size = int(doc_matrix.shape[0] / 2)                             # Half for training, half for validation.
+    set_size = int(doc_matrix.shape[0] / 2)  # Half for training, half for validation.
 
     print('Loading data...')
     x_train = doc_matrix[:set_size, :, :]
@@ -129,18 +131,25 @@ def train_model(model, model_name, doc_matrix, score_matrix, epochs=1, batch_siz
     y_test = score_matrix[set_size:, :]
 
     print('Train...')
-    model.fit(x_train, y_train,
-              batch_size=batch_size,
-              epochs=epochs,
-              validation_data=[x_test, y_test],
-              #verbose=2
-              )
-
-    #print(model.predict(doc_matrix[180:181, :, :]))
-    #print(score_matrix[180])
+    history = model.fit(x_train, y_train,
+                        batch_size=batch_size,
+                        epochs=epochs,
+                        validation_data=[x_test, y_test])
 
     if save_model:
         model.save(os.getcwd() + "/models/" + model_name + ".h5")
+
+    history_path = os.getcwd() + "/models/" + model_name + ".hst"
+    history = history.history
+    if os.path.isfile(history_path):
+        with open(history_path, "rb") as file:
+            old_history = pickle.load(file)
+        for key in history.keys():
+            old_history[key].extend(history[key])
+        history = old_history
+
+    with open(history_path, "wb") as dest_file:
+        pickle.dump(history, dest_file)
 
 
 # Crops the output(x[0]) based on the input(x[1]) padding.
@@ -150,12 +159,12 @@ def crop(x):
     vector_size = 134
 
     # Build a matrix having 1 for every non-zero vector, 0 otherwise.
-    padding = K.cast(K.not_equal(inputs, 0), dtype=K.floatx())              # Shape: BxDxV.
+    padding = K.cast(K.not_equal(inputs, 0), dtype=K.floatx())  # Shape: BxDxV.
     # Transposing the matrix.
-    padding = K.permute_dimensions(padding, (0, 2, 1))                      # Shape: BxVxD.
+    padding = K.permute_dimensions(padding, (0, 2, 1))  # Shape: BxVxD.
 
-    resizing = K.ones((1, vector_size))                                     # Shape: 1xV.
-    padding = K.dot(resizing, padding)                                      # Shape: Bx1xD
+    resizing = K.ones((1, vector_size))  # Shape: 1xV.
+    padding = K.dot(resizing, padding)  # Shape: Bx1xD
     padding = K.squeeze(padding, 0)
     # Rebuilding the vector with only 1 and 0 (as the dot will produce vector_size and 0s).
     padding = K.cast(K.not_equal(padding, 0), dtype=K.floatx())
@@ -209,7 +218,7 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, summ_len=100):
         print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
         pas_list = docs_pas_lists[i]
         pas_no = len(pas_list)
-        doc_vectors = doc_matrix[i:i+1, :, :]
+        doc_vectors = doc_matrix[i:i + 1, :, :]
 
         # Getting the scores for each sentence predicted by the model (The predict functions accepts lists, so I use a
         # list of 1 element and get the first result).

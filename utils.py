@@ -1,3 +1,4 @@
+import os
 import re
 import string
 import unicodedata
@@ -8,6 +9,7 @@ import nltk
 import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
+import matplotlib.pyplot as plt
 
 from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
@@ -157,3 +159,21 @@ def timer(text, start_time):
 
 def tokens(text):
     return tokenizer.tokenize(text)
+
+def plot_history(model_name):
+    with open(os.getcwd() + "/models/" + model_name + ".hst", "rb") as file:
+        history = pickle.load(file)
+    # Get training and test loss histories
+    training_acc = history['acc']
+    test_acc = history['val_acc']
+
+    # Create count of the number of epochs
+    epoch_count = range(1, len(training_acc) + 1)
+
+    # Visualize loss history
+    plt.plot(epoch_count, training_acc, 'r--')
+    plt.plot(epoch_count, test_acc, 'b-')
+    plt.legend(['Training Accuracy', 'Test Accuracy'])
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.show()
