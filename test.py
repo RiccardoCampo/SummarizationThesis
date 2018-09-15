@@ -10,7 +10,7 @@ else:
     _result_path_ = "C:/Users/Riccardo/Desktop/temp_results/results.txt"
 
 
-def test(model_name):
+def test(series_name):
     binary = False
     weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                     (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
@@ -19,7 +19,7 @@ def test(model_name):
     training_no = 666  # includes validation.
 
     for weights in weights_list:
-        model_name += "_" + str(weights)
+        model_name = series_name + "_" + str(weights)
         rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                         "rouge_2_precision": 0, "rouge_2_f_score": 0}
         for index in range(batches):

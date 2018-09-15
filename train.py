@@ -5,7 +5,7 @@ from summarization import build_model, train_model
 from utils import plot_history
 
 
-def train(model_name, batch_size, epochs):
+def train(series_name, batch_size, epochs):
     binary = False
     weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                     (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
@@ -16,7 +16,7 @@ def train(model_name, batch_size, epochs):
     vector_size = 134
 
     for weights in weights_list:
-        model_name += "_" + str(batch_size) + "_" + str(epochs) + "_" + str(weights)
+        model_name = series_name + "_" + str(batch_size) + "_" + str(epochs) + "_" + str(weights)
         save_model = False
 
         model = build_model(doc_size, vector_size)

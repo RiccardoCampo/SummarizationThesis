@@ -182,3 +182,4 @@ def plot_history(model_name):
     plt.ylabel('Accuracy')
     plt.show()
     plt.savefig("models/" + model_name + ".pdf")
+    plt.close()
