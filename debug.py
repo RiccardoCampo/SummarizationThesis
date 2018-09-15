@@ -21,6 +21,21 @@ if os.name == "posix":
 else:
     _result_path_ = "C:/Users/Riccardo/Desktop/temp_results/results.txt"
 
+
+plot_history("nyt_001_10_4_(0.0, 1.0)")
+plot_history("nyt_001_10_4_(0.1, 0.9)")
+plot_history("nyt_001_10_4_(0.2, 0.8)")
+plot_history("nyt_001_10_4_(0.3, 0.7)")
+plot_history("nyt_001_10_4_(0.4, 0.6)")
+plot_history("nyt_001_10_4_(0.5, 0.5)")
+plot_history("nyt_001_10_4_(0.6, 0.4)")
+plot_history("nyt_001_10_4_(0.7, 0.3)")
+plot_history("nyt_001_10_4_(0.8, 0.2)")
+plot_history("nyt_001_10_4_(0.9, 0.1)")
+plot_history("nyt_001_10_4_(1.0, 0.0)")
+
+
+
 """     TESTING WEIGHTED PAS METHOD (SIMPLE)
 weights_list = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],

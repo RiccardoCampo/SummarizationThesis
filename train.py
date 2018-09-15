@@ -2,6 +2,7 @@ import sys
 
 from dataset import get_matrices
 from summarization import build_model, train_model
+from utils import plot_history
 
 
 def train(model_name, batch_size, epochs):
@@ -29,6 +30,7 @@ def train(model_name, batch_size, epochs):
             print("index: " + str(index))
             train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=epochs,
                         batch_size=batch_size, save_model=save_model)
+            plot_history(model_name)
 
 
 if __name__ == "__main__":

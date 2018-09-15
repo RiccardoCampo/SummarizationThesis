@@ -163,6 +163,7 @@ def timer(text, start_time):
 def tokens(text):
     return tokenizer.tokenize(text)
 
+
 def plot_history(model_name):
     with open(os.getcwd() + "/models/" + model_name + ".hst", "rb") as file:
         history = pickle.load(file)
@@ -180,3 +181,4 @@ def plot_history(model_name):
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.show()
+    plt.savefig("models/" + model_name + ".pdf")
