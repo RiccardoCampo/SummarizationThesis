@@ -8,7 +8,8 @@ import logging
 import keras
 
 from dataset import get_matrices, get_duc, shuffle_data, get_nyt, \
-    store_pas_nyt_dataset, compute_idfs, store_matrices, get_nyt_pas_lists, arrange_nyt_pas_lists, get_refs_from_pas
+    store_pas_nyt_dataset, compute_idfs, store_matrices, get_nyt_pas_lists, arrange_nyt_pas_lists, get_refs_from_pas, \
+    get_duc_pas_lists
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from summarization import testing, testing_weighted, find_redundant_pas, rouge_score, build_model, train_model, best_pas
 from utils import sentence_embeddings, plot_history
@@ -20,21 +21,6 @@ if os.name == "posix":
     _result_path_ = "/home/arcslab/Documents/Riccardo_Campo/results/results.txt"
 else:
     _result_path_ = "C:/Users/Riccardo/Desktop/temp_results/results.txt"
-
-
-plot_history("nyt_001_10_4_(0.0, 1.0)")
-plot_history("nyt_001_10_4_(0.1, 0.9)")
-plot_history("nyt_001_10_4_(0.2, 0.8)")
-plot_history("nyt_001_10_4_(0.3, 0.7)")
-plot_history("nyt_001_10_4_(0.4, 0.6)")
-plot_history("nyt_001_10_4_(0.5, 0.5)")
-plot_history("nyt_001_10_4_(0.6, 0.4)")
-plot_history("nyt_001_10_4_(0.7, 0.3)")
-plot_history("nyt_001_10_4_(0.8, 0.2)")
-plot_history("nyt_001_10_4_(0.9, 0.1)")
-plot_history("nyt_001_10_4_(1.0, 0.0)")
-
-
 
 """     TESTING WEIGHTED PAS METHOD (SIMPLE)
 weights_list = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
@@ -69,7 +55,6 @@ for weights in weights_list:
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
 """
-
 
 """        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)    DUC
 weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
@@ -163,75 +148,24 @@ for weights in weights_list:
 
 """
 
-"""        TESTING & TRAINING DUC
-tst = False
+# """        TESTING & TRAINING NYT
+tst = True
+trn = False
 binary = False
-for i in range(0, 10):
-    weights_list = [#(0.4, 0.6),
-                    #(0.5, 0.5),
-                    #(0.6, 0.4),
-                    #(0.3, 0.7)
-                    (0.2, 0.8),
-                    #(0.1, 0.9),
-                    #(0.0, 1.0)
-                    ]
-    for weights in weights_list:
-        store_duc_matrices(weights, binary_scores=binary)
-        doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=binary)
-        docs_pas_lists, _ = get_pas_lists()
-        _, refs, _ = get_duc(_duc_path_)
+weights_list = [  # (0.0, 1.0),
+    # (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+    # (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
+    # (0.8, 0.2), (0.9, 0.1),
+    (1.0, 0.0)]
 
-        training_no = 348       # includes validation.
-
-        model_name = "correct_blstm" + str(weights) + str(i)
-        if not tst:
-            training(doc_matrix[:training_no, :, :], score_matrix[:training_no, :], model_name, epochs=1)
-        print(model_name)
-
-        if tst:
-            score = testing(model_name,
-                            docs_pas_lists[training_no:],
-                            doc_matrix[training_no:, :, :],
-                            refs[training_no:])
-            print(score)
-            with open(_result_path_, "a") as res_file:
-                print(model_name, file=res_file)
-                print(score, file=res_file)
-                print("=================================================", file=res_file)
-"""
-
-"""     DUMMY DATA  
-#doc_matrix, ref_matrix, score_matrix = get_matrices(weights=(0.0, 1.0), binary=True)
-#store_duc_matrices((0.0, 1.0), binary_scores=True)
-#print(doc_matrix[0, 0, :])
-
-docs = np.array([[[1.0, 2.0, 3.0, 4.0], [2.0, 4.0, 6.0, 8.0], [0.0, 0.0, 0.0, 0.0]],
-                 [[1.0, 2.0, 3.0, 4.0], [2.0, 4.0, 6.0, 8.0], [0.5, 1.0, 1.5, 2.0]],
-                 [[1.0, 2.0, 3.0, 4.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
-                 [[3.0, 6.0, 9.0, 12.0], [1.0, 2.0, 3.0, 4.0], [0.0, 0.0, 0.0, 0.0]]])
-scores = np.array([[1.0, 2.0, 0.0],
-                   [1.0, 2.0, 0.5],
-                   [1.0, 0.0, 0.0],
-                   [3.0, 1.0, 0.0]])
-training(docs, scores, "DUMMY", epochs=10)
-"""
-
-"""        TESTING & TRAINING NYT
-tst = False
-trn = True
-binary = False
-weights_list = [(0.0, 1.0),
-                #(0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
-                #(0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
-                #(0.8, 0.2), (0.9, 0.1), (1.0, 0.0)
-                 ]
-batches = 3
-training_no = 666                   # includes validation.
+batches = 15
+# training_no = 666                   # includes validation.
+training_no = 0
 doc_size = 300
 vector_size = 134
 
 for weights in weights_list:
-    model_name = "nyt_first" + str(weights)
+    model_name = "nyt_001_10_4_" + str(weights)
     save_model = False
 
     if trn:
@@ -246,38 +180,44 @@ for weights in weights_list:
 
             print(weights)
             print("index: " + str(index))
-            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=4, batch_size=50, save_model=save_model)
+            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=4,
+                        batch_size=50, save_model=save_model)
 
     if tst:
-        rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
-                        "rouge_2_precision": 0, "rouge_2_f_score": 0}
-        for index in range(batches):
-            doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
-            docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
-            refs = get_refs_from_pas(refs_pas_lists)
-            score = testing(model_name,
-                            docs_pas_lists[training_no:],
-                            doc_matrix[training_no:, :, :],
-                            refs[training_no:])
+        # rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
+        #                "rouge_2_precision": 0, "rouge_2_f_score": 0}
+        # for index in range(batches):
+        doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=binary)
+        # doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
+        docs_pas_lists, refs_pas_lists = get_duc_pas_lists()
+        # docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
+        _, refs, _ = get_duc(_duc_path_)
+        # refs = get_refs_from_pas(refs_pas_lists)
 
-            rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
-            rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
-            rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
-            rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
-            rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
-            rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
+        # score = testing(model_name,
+        rouge_scores = testing(model_name,
+                               docs_pas_lists[training_no:],
+                               doc_matrix[training_no:, :doc_size, :],
+                               refs[training_no:])
 
-        for k in rouge_scores.keys():
-            rouge_scores[k] /= batches
+        # rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
+        # rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
+        # rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
+        # rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
+        # rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
+        # rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
+
+        # for k in rouge_scores.keys():
+        #   rouge_scores[k] /= batches
 
         with open(_result_path_, "a") as res_file:
-            print(model_name, file=res_file)
+            print(model_name + "DUC_TEST", file=res_file)
             print(rouge_scores, file=res_file)
             print("=================================================", file=res_file)
 
-"""
+# """
 
-#plot_history("nyt_first(0.0, 1.0)")
+# plot_history("nyt_first(0.0, 1.0)")
 
 
 """# CLUSTERING TEST, ONE BY ONE
