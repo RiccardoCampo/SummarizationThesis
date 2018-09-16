@@ -68,7 +68,7 @@ def get_duc(duc_path):
                     doc_f.seek(0)
                     doc_f.write(doc)
                     doc_f.close()
-            print(doc_name)
+            print(dir_name + doc_name)
             xml_doc = xml.etree.ElementTree.parse(duc_path + "/docs/" + dir_name + "/" + doc_name).getroot()
             doc = ""
             # Every file from different newspaper uses different tags for the title and body of the article.
