@@ -214,7 +214,8 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, summ_len=100):
     model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
 
     # Computing the score for each document than compute the average.
-    for i in range(len(docs_pas_lists)):
+    #for i in range(len(docs_pas_lists)):
+    for i in range(520):
         print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
         pas_list = docs_pas_lists[i]
         pas_no = len(pas_list)
