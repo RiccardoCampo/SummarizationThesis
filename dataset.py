@@ -109,6 +109,7 @@ def get_duc(duc_path):
                 doc = doc_f.read()
                 if not doc.startswith("<DOC>"):
                     print(summ_dir_name)
+                    print(doc)
                     doc = "<DOC>" + doc + "</DOC>"
                     doc_f.close()
                     with open(duc_path + "/summaries/" + summ_dir_name + "/perdocs", "w") as doc_f_w:
