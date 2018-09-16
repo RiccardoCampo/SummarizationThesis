@@ -10,7 +10,7 @@ def train(series_name, batch_size, epochs):
     weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                     (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                     (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
-    batches = 15
+    batches = 35
     training_no = 666  # includes validation.
     doc_size = 300
     vector_size = 134

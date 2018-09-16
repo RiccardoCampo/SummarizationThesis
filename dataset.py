@@ -67,7 +67,6 @@ def get_duc(duc_path):
                     doc = re.sub(" P=([0-9]+)", r' P="\1"', doc)
                 with open(duc_path + "/docs/" + dir_name + "/" + doc_name, "w") as doc_f:
                     print(doc, file=doc_f)
-            print(dir_name + doc_name)
             xml_doc = xml.etree.ElementTree.parse(duc_path + "/docs/" + dir_name + "/" + doc_name).getroot()
             doc = ""
             # Every file from different newspaper uses different tags for the title and body of the article.
@@ -107,13 +106,10 @@ def get_duc(duc_path):
             with open(duc_path + "/summaries/" + summ_dir_name + "/perdocs", "r+") as doc_f:
                 doc = doc_f.read()
                 if not doc.startswith("<DOC>"):
-                    print(summ_dir_name)
-                    print(doc)
                     doc = "<DOC>" + doc + "</DOC>"
                     doc_f.close()
                     with open(duc_path + "/summaries/" + summ_dir_name + "/perdocs", "w") as doc_f_w:
                         print(doc, file=doc_f_w)
-            print(summ_dir_name)
             xml_doc = xml.etree.ElementTree.parse(duc_path + "/summaries/" + summ_dir_name + "/perdocs").getroot()
             for elem in xml_doc.findall("SUM"):
                 if elem.get("DOCREF") == doc_name:
@@ -247,7 +243,7 @@ def store_pas_nyt_dataset(nyt_path, min_pas, max_pas):
 
 
 # Putting pas lists in files of fixed length and without excessively long documents.
-def arrange_nyt_pas_lists(dim=1000, max_len=300, max_file=340000):
+def arrange_nyt_pas_lists(dim=1000, max_len=300, max_file=660000):
     end_of_docs = False
     batch = 0
     while not end_of_docs:
@@ -314,25 +310,6 @@ def get_nyt_pas_lists(index=0):
     with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_refs_pas" + str(index) + ".dat", "rb") as refs_f:
         refs_pas_lists = pickle.load(refs_f)
     return docs_pas_lists, refs_pas_lists
-
-
-# Get the reference summaries starting from the reference pas (each pas contain the original sentence from which it has
-# been extracted, there can be multiple pas with the same sentence).
-def get_refs_from_pas(pas_lists):
-    refs = []
-    for pas_list in pas_lists:
-        sentences = []
-        for pas in pas_list:
-            if pas.sentence not in sentences:
-                sentences.append(pas.sentence)
-
-        ref = ""
-        for sent in sentences:
-            ref += sent + ". "
-
-        refs.append(ref)
-
-    return refs
 
 
 # Matrix representation is computed and stored.

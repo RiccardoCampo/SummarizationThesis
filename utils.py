@@ -1,4 +1,5 @@
 import os
+import random
 import re
 import string
 import unicodedata
@@ -11,6 +12,9 @@ import tensorflow_hub as hub
 import numpy as np
 
 import matplotlib
+
+from summarization import generate_summary
+
 matplotlib.use("Pdf")
 import matplotlib.pyplot as plt
 
@@ -21,6 +25,12 @@ stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 embedder = hub.Module("https://tfhub.dev/google/random-nnlm-en-dim128/1")
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+
+if os.name == "posix":
+    result_path = "/home/arcslab/Documents/Riccardo_Campo/results/"
+else:
+    result_path = "C:/Users/Riccardo/Desktop/temp_results/"
+
 
 # Preprocessing the input text to make it ready for the SRL
 def text_cleanup(full_text):
@@ -164,6 +174,25 @@ def tokens(text):
     return tokenizer.tokenize(text)
 
 
+# Get the source text starting from the pas list (each pas contain the original sentence from which it has
+# been extracted, there can be multiple pas with the same sentence).
+def get_sources_from_pas_lists(pas_lists):
+    sources = []
+    for pas_list in pas_lists:
+        sentences = []
+        for pas in pas_list:
+            if pas.sentence not in sentences:
+                sentences.append(pas.sentence)
+
+        ref = ""
+        for sent in sentences:
+            ref += sent + ". "
+
+        sources.append(ref)
+
+    return sources
+
+
 def plot_history(model_name):
     with open(os.getcwd() + "/models/" + model_name + ".hst", "rb") as file:
         history = pickle.load(file)
@@ -181,5 +210,70 @@ def plot_history(model_name):
     plt.xlabel('Epoch')
     plt.ylabel('Accuracy')
     plt.show()
-    plt.savefig("models/" + model_name + ".pdf")
+    plt.savefig(result_path + "histories/" + model_name + ".pdf")
     plt.close()
+
+
+# Print some relevant summaries from a batch of texts.
+def sample_summaries(model_name, docs_pas_lists, refs, recall_score_list, batch=-1, summaries=None):
+    docs = get_sources_from_pas_lists(docs_pas_lists)
+    if summaries is None:
+        summaries = [generate_summary(model_name, pas_list) for pas_list in docs_pas_lists]
+
+    rnd_index = random.randint(1, len(docs))
+    best_index = recall_score_list.index(max(recall_score_list))
+    worst_index = recall_score_list.index(min(recall_score_list))
+
+    avg_recall_score = np.mean(recall_score_list)
+    distances = [abs(avg_recall_score - score) for score in recall_score_list]
+    avg_index = distances.index(min(distances))
+
+    with open(result_path + "sample_summaries/" + model_name + "_sample_summaries.txt", "w") as dest_f:
+        print("SAMPLES EXTRACTED USING MODEL:" + model_name, file=dest_f)
+        if batch > -1:
+            print("FROM BATCH: " + str(batch), file=dest_f)
+
+        print("FIRST DOCUMENT:", file=dest_f)
+        print("ORIGINAL DOCUMENT:", file=dest_f)
+        print(docs[0], file=dest_f)
+        print("REFERENCE:", file=dest_f)
+        print(refs[0], file=dest_f)
+        print("GENERATED SUMMARY:", file=dest_f)
+        print(summaries[0], file=dest_f)
+        print("ROUGE 1 RECALL: " + str(recall_score_list[0]), file=dest_f)
+
+        print("RANDOM DOCUMENT (index: " + str(rnd_index) + "):", file=dest_f)
+        print("ORIGINAL DOCUMENT:", file=dest_f)
+        print(docs[rnd_index], file=dest_f)
+        print("REFERENCE:", file=dest_f)
+        print(refs[rnd_index], file=dest_f)
+        print("GENERATED SUMMARY:", file=dest_f)
+        print(summaries[rnd_index], file=dest_f)
+        print("ROUGE 1 RECALL: " + str(recall_score_list[rnd_index]), file=dest_f)
+
+        print("BEST RECALL DOCUMENT (index: " + str(best_index) + "):", file=dest_f)
+        print("ORIGINAL DOCUMENT:", file=dest_f)
+        print(docs[best_index], file=dest_f)
+        print("REFERENCE:", file=dest_f)
+        print(refs[best_index], file=dest_f)
+        print("GENERATED SUMMARY:", file=dest_f)
+        print(summaries[best_index], file=dest_f)
+        print("ROUGE 1 RECALL: " + str(recall_score_list[best_index]), file=dest_f)
+
+        print("WORST RECALL DOCUMENT (index: " + str(worst_index) + "):", file=dest_f)
+        print("ORIGINAL DOCUMENT:", file=dest_f)
+        print(docs[worst_index], file=dest_f)
+        print("REFERENCE:", file=dest_f)
+        print(refs[worst_index], file=dest_f)
+        print("GENERATED SUMMARY:", file=dest_f)
+        print(summaries[worst_index], file=dest_f)
+        print("ROUGE 1 RECALL: " + str(recall_score_list[worst_index]), file=dest_f)
+
+        print("AVERAGE RECALL DOCUMENT (index: " + str(avg_index) + "):", file=dest_f)
+        print("ORIGINAL DOCUMENT:", file=dest_f)
+        print(docs[avg_index], file=dest_f)
+        print("REFERENCE:", file=dest_f)
+        print(refs[avg_index], file=dest_f)
+        print("GENERATED SUMMARY:", file=dest_f)
+        print(summaries[avg_index], file=dest_f)
+        print("ROUGE 1 RECALL: " + str(recall_score_list[avg_index]), file=dest_f)

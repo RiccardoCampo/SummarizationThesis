@@ -207,59 +207,101 @@ def rouge_score(summaries, references):
     return output_dict
 
 
+# Generate the summary give the Model and the source text in the form of pas list.
+def generate_summary(model_name, pas_list, summ_len=100):
+    model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
+    pas_no = len(pas_list)
+    doc_vectors = [np.append(pas.vector, pas.embeddings) for pas in pas_list]
+
+    # Getting the scores for each sentence predicted by the model (The predict functions accepts lists, so I use a
+    # list of 1 element and get the first result).
+    pred_scores = model.predict(doc_vectors)[0]
+    # Cutting the scores to the length of the document and arrange them by score preserving the original position.
+    scores = pred_scores[:pas_no]
+    sorted_scores = [(j, scores[j]) for j in range(len(scores))]
+    sorted_scores.sort(key=lambda tup: -tup[1])
+
+    # Get the indices of the sorted pas, then a list of the sorted realized pas.
+    sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
+    sorted_realized_pas = [pas_list[index].realized_pas for index in sorted_indices]
+    # Build a list of best pas excluding the redundant pas (see redundant_pas).
+    best_pas_list = []
+    best_indices_list = []
+    size = 0
+    j = 0
+    while size < summ_len and j < pas_no:
+        redundant_pas = find_redundant_pas(best_pas_list, sorted_realized_pas[j])
+        # If there are no redundant pas the pas is added and the size is increased.
+        if redundant_pas is None:
+            size += len(sorted_realized_pas[j].split())
+            if size < summ_len:
+                best_pas_list.append(sorted_realized_pas[j])
+                best_indices_list.append(sorted_indices[j])
+        # Otherwise the redundant pas is removed.
+        else:
+            if redundant_pas in best_pas_list:
+                if size - len(redundant_pas) + len(sorted_realized_pas[j]) < summ_len:
+                    size = size - len(redundant_pas) + len(sorted_realized_pas[j])
+                    best_pas_list[best_pas_list.index(redundant_pas)] = sorted_realized_pas[j]
+                    best_indices_list[best_pas_list.index(redundant_pas)] = sorted_indices[j]
+        j += 1
+
+    # Sort the best indices and build the summary.
+    best_indices_list.sort()
+
+    summary = ""
+    for index in best_indices_list:
+        summary += pas_list[index].realized_pas + ".\n"
+
+    return summary
+
+
+# Generate the summary give the weights and the source text in the form of pas list.
+def generate_summary_weighted(pas_list, weights, summ_len=100):
+    pas_no = len(pas_list)
+    scores = [np.array(pas.vector).dot(np.array(weights)) for pas in pas_list]
+    sorted_scores = [(j, scores[j]) for j in range(len(scores))]
+    sorted_scores.sort(key=lambda tup: -tup[1])
+
+    sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
+    sorted_realized_pas = [pas_list[index].realized_pas for index in sorted_indices]
+    best_pas_list = []
+    best_indices_list = []
+    size = 0
+    j = 0
+    while size < summ_len and j < pas_no:
+        redundant_pas = find_redundant_pas(best_pas_list, sorted_realized_pas[j])
+        if redundant_pas is None:
+            size += len(sorted_realized_pas[j].split())
+            if size < summ_len:
+                best_pas_list.append(sorted_realized_pas[j])
+                best_indices_list.append(sorted_indices[j])
+        else:
+            if redundant_pas in best_pas_list:
+                if size - len(redundant_pas) + len(sorted_realized_pas[j]) < summ_len:
+                    size = size - len(redundant_pas) + len(sorted_realized_pas[j])
+                    best_pas_list[best_pas_list.index(redundant_pas)] = sorted_realized_pas[j]
+                    best_indices_list[best_pas_list.index(redundant_pas)] = sorted_indices[j]
+        j += 1
+
+    best_indices_list.sort()
+
+    summary = ""
+    for index in best_indices_list:
+        summary += pas_list[index].realized_pas + ".\n"
+    return summary
+
+
 # Compute rouge scores given a model.
-def testing(model_name, docs_pas_lists, doc_matrix, refs, summ_len=100):
+def testing(model_name, docs_pas_lists, refs, summ_len=100):
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
-    model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
+    recall_score_list = []
 
     # Computing the score for each document than compute the average.
-    #for i in range(len(docs_pas_lists)):
-    for i in range(520):
+    for i in range(len(docs_pas_lists)):
         print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
-        pas_list = docs_pas_lists[i]
-        pas_no = len(pas_list)
-        doc_vectors = doc_matrix[i:i + 1, :, :]
-
-        # Getting the scores for each sentence predicted by the model (The predict functions accepts lists, so I use a
-        # list of 1 element and get the first result).
-        pred_scores = model.predict(doc_vectors)[0]
-        # Cutting the scores to the length of the document and arrange them by score preserving the original position.
-        scores = pred_scores[:pas_no]
-        sorted_scores = [(j, scores[j]) for j in range(len(scores))]
-        sorted_scores.sort(key=lambda tup: -tup[1])
-
-        # Get the indices of the sorted pas, then a list of the sorted realized pas.
-        sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
-        sorted_realized_pas = [pas_list[index].realized_pas for index in sorted_indices]
-        # Build a list of best pas excluding the redundant pas (see redundant_pas).
-        best_pas_list = []
-        best_indices_list = []
-        size = 0
-        j = 0
-        while size < summ_len and j < pas_no:
-            redundant_pas = find_redundant_pas(best_pas_list, sorted_realized_pas[j])
-            # If there are no redundant pas the pas is added and the size is increased.
-            if redundant_pas is None:
-                size += len(sorted_realized_pas[j].split())
-                if size < summ_len:
-                    best_pas_list.append(sorted_realized_pas[j])
-                    best_indices_list.append(sorted_indices[j])
-            # Otherwise the redundant pas is removed.
-            else:
-                if redundant_pas in best_pas_list:
-                    if size - len(redundant_pas) + len(sorted_realized_pas[j]) < summ_len:
-                        size = size - len(redundant_pas) + len(sorted_realized_pas[j])
-                        best_pas_list[best_pas_list.index(redundant_pas)] = sorted_realized_pas[j]
-                        best_indices_list[best_pas_list.index(redundant_pas)] = sorted_indices[j]
-            j += 1
-
-        # Sort the best indices and build the summary.
-        best_indices_list.sort()
-
-        summary = ""
-        for index in best_indices_list:
-            summary += pas_list[index].realized_pas + ".\n"
+        summary = generate_summary(model_name, docs_pas_lists[i], summ_len=summ_len)
 
         # Get the rouge scores.
         score = rouge_score([summary], [refs[i]])
@@ -269,11 +311,12 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, summ_len=100):
         rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
         rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
         rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
+        recall_score_list.append(score["rouge_1_recall"])
 
     for k in rouge_scores.keys():
         rouge_scores[k] /= len(docs_pas_lists)
 
-    return rouge_scores
+    return rouge_scores, recall_score_list
 
 
 # Getting the scores with the weighted method.
@@ -284,37 +327,7 @@ def testing_weighted(docs_pas_lists, refs, weights, summ_len=100):
     # Same operations as for the previous function except that the scores are computed by multiplying the features by
     # the weights.
     for pas_list in docs_pas_lists:
-        pas_no = len(pas_list)
-        scores = [np.array(pas.vector).dot(np.array(weights)) for pas in pas_list]
-        sorted_scores = [(j, scores[j]) for j in range(len(scores))]
-        sorted_scores.sort(key=lambda tup: -tup[1])
-
-        sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
-        sorted_realized_pas = [pas_list[index].realized_pas for index in sorted_indices]
-        best_pas_list = []
-        best_indices_list = []
-        size = 0
-        j = 0
-        while size < summ_len and j < pas_no:
-            redundant_pas = find_redundant_pas(best_pas_list, sorted_realized_pas[j])
-            if redundant_pas is None:
-                size += len(sorted_realized_pas[j].split())
-                if size < summ_len:
-                    best_pas_list.append(sorted_realized_pas[j])
-                    best_indices_list.append(sorted_indices[j])
-            else:
-                if redundant_pas in best_pas_list:
-                    if size - len(redundant_pas) + len(sorted_realized_pas[j]) < summ_len:
-                        size = size - len(redundant_pas) + len(sorted_realized_pas[j])
-                        best_pas_list[best_pas_list.index(redundant_pas)] = sorted_realized_pas[j]
-                        best_indices_list[best_pas_list.index(redundant_pas)] = sorted_indices[j]
-            j += 1
-
-        best_indices_list.sort()
-
-        summary = ""
-        for index in best_indices_list:
-            summary += pas_list[index].realized_pas + ".\n"
+        summary = generate_summary_weighted(pas_list, weights, summ_len=summ_len)
 
         score = rouge_score([summary], [refs[docs_pas_lists.index(pas_list)]])
         rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
