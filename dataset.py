@@ -65,9 +65,8 @@ def get_duc(duc_path):
                 with open(duc_path + "/docs/" + dir_name + "/" + doc_name, "r+") as doc_f:
                     doc = doc_f.read()
                     doc = re.sub(" P=([0-9]+)", r' P="\1"', doc)
-                    doc_f.seek(0)
-                    doc_f.write(doc)
-                    doc_f.close()
+                with open(duc_path + "/docs/" + dir_name + "/" + doc_name, "w") as doc_f:
+                    print(doc, file=doc_f)
             print(dir_name + doc_name)
             xml_doc = xml.etree.ElementTree.parse(duc_path + "/docs/" + dir_name + "/" + doc_name).getroot()
             doc = ""
