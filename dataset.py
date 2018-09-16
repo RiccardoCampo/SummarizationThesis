@@ -110,9 +110,9 @@ def get_duc(duc_path):
                 if not doc.startswith("<DOC>"):
                     print(summ_dir_name)
                     doc = "<DOC>" + doc + "</DOC>"
-                    doc_f.seek(0)
-                    doc_f.write(doc)
-                doc_f.close()
+                    doc_f.close()
+                    with open(duc_path + "/summaries/" + summ_dir_name + "/perdocs", "w") as doc_f_w:
+                        print(doc, file=doc_f_w)
             print(summ_dir_name)
             xml_doc = xml.etree.ElementTree.parse(duc_path + "/summaries/" + summ_dir_name + "/perdocs").getroot()
             for elem in xml_doc.findall("SUM"):
