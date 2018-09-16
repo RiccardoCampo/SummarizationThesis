@@ -108,10 +108,12 @@ def get_duc(duc_path):
             with open(duc_path + "/summaries/" + summ_dir_name + "/perdocs", "r+") as doc_f:
                 doc = doc_f.read()
                 if not doc.startswith("<DOC>"):
+                    print(summ_dir_name)
                     doc = "<DOC>" + doc + "</DOC>"
                     doc_f.seek(0)
                     doc_f.write(doc)
                 doc_f.close()
+            print(summ_dir_name)
             xml_doc = xml.etree.ElementTree.parse(duc_path + "/summaries/" + summ_dir_name + "/perdocs").getroot()
             for elem in xml_doc.findall("SUM"):
                 if elem.get("DOCREF") == doc_name:
