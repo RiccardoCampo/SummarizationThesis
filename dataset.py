@@ -108,6 +108,7 @@ def get_duc(duc_path):
             with open(duc_path + "/summaries/" + summ_dir_name + "/perdocs", "r+") as doc_f:
                 doc = doc_f.read()
                 if not doc.startswith("<DOC>"):
+                    print("not tarting with DOC" + summ_dir_name)
                     doc = "<DOC>" + doc + "</DOC>"
                 doc_f.seek(0)
                 doc_f.write(doc)
