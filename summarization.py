@@ -227,20 +227,22 @@ def generate_summary(pas_list, scores, summ_len=100):
         current_pas = sorted_pas[j]
         current_index = sorted_indices[j]
 
-        # If the sentence has never been used it is added to the list.
-        # Otherwise between the previous and the current pas the longest one is selected.
-        # (To do this it is necessary to decrease the size and remove the previous pas index).
-        if current_pas.sentence not in pas_per_sentence.keys():
-            best_indices_list.append(current_index)
-            pas_per_sentence[current_pas.sentence] = (current_pas.realized_pas, current_index)
-            size += len(current_pas.realized_pas.split())
-        else:
-            if len(current_pas.realized_pas) > len(pas_per_sentence[current_pas.sentence][0]):
-                size -= len(pas_per_sentence[current_pas.sentence][0])
-                best_indices_list.remove(pas_per_sentence[current_pas.sentence][1])
+        # Excluding short pas (errors).
+        if len(current_pas.realized_pas.split()) > 3:
+            # If the sentence has never been used it is added to the list.
+            # Otherwise between the previous and the current pas the longest one is selected.
+            # (To do this it is necessary to decrease the size and remove the previous pas index).
+            if current_pas.sentence not in pas_per_sentence.keys():
                 best_indices_list.append(current_index)
                 pas_per_sentence[current_pas.sentence] = (current_pas.realized_pas, current_index)
-                size += len(pas_per_sentence[current_pas.sentence][0])
+                size += len(current_pas.realized_pas.split())
+            else:
+                if len(current_pas.realized_pas) > len(pas_per_sentence[current_pas.sentence][0]):
+                    size -= len(pas_per_sentence[current_pas.sentence][0])
+                    best_indices_list.remove(pas_per_sentence[current_pas.sentence][1])
+                    best_indices_list.append(current_index)
+                    pas_per_sentence[current_pas.sentence] = (current_pas.realized_pas, current_index)
+                    size += len(pas_per_sentence[current_pas.sentence][0])
         j += 1
 
     # Sort the best indices and build the summary.

@@ -17,11 +17,49 @@ from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists,
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-docs_pas_lists, _ = get_nyt_pas_lists(index=0)
-training_no = 666  # includes validation.
-docs_pas_lists = docs_pas_lists[training_no:]
+for i in range(35):
+    print("refactoring batch: " + str(i))
+    docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=0)
+    print("docs...")
+    for pas_list in docs_pas_lists:
+        for pas in pas_list:
+            pas.realized_pas = realize_pas(pas)
+    print("refs...")
+    for pas_list in refs_pas_lists:
+        for pas in pas_list:
+            pas.realized_pas = realize_pas(pas)
 
-print(realize_pas(docs_pas_lists[0][6]))
+    with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_docs_pas" + str(i) + ".dat", "wb") as dest_f:
+        pickle.dump(docs_pas_lists, dest_f)
+    with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_refs_pas" + str(i) + ".dat", "wb") as dest_f:
+        pickle.dump(refs_pas_lists, dest_f)
+
+"""  SUMMARIES CHECK
+doc_matrix, ref_matrix, score_matrix = get_matrices((0.0, 1.0), index=0)
+docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=0)
+refs = get_sources_from_pas_lists(refs_pas_lists)
+
+recall_scores_list = [0] * 1000
+summaries = []
+
+max_sent_no = doc_matrix.shape[1]
+
+for pas_list in docs_pas_lists:
+    for pas in pas_list:
+        pas.realized_pas = realize_pas(pas)
+
+summaries = []
+for i in range(len(docs_pas_lists)):
+    pas_list = docs_pas_lists[i]
+    pas_no = len(pas_list)
+    sent_vec_len = len(pas_list[0].vector) + len(pas_list[0].embeddings)
+
+    pred_scores = score_matrix[i, :]
+    scores = pred_scores[:pas_no]
+    summary = generate_summary(pas_list, scores)
+    summaries.append(summary)
+sample_summaries("maximum_scores", docs_pas_lists, refs, recall_scores_list, summaries=summaries, batch=0)
+"""
 
 """     TESTING WEIGHTED PAS METHOD (SIMPLE)
 weights_list = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
@@ -86,8 +124,11 @@ for weights in weights_list:
 
         max_sent_no = doc_matrix.shape[1]
 
-        #for i in range(len(docs_pas_lists)):
-        for i in range(2):
+        for pas_list in docs_pas_lists:
+            for pas in pas_list:
+                pas.realized_pas = realize_pas(pas)
+
+        for i in range(len(docs_pas_lists)):
            # print(weights)
            # print(k)
            # print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))

@@ -177,7 +177,7 @@ def tokens(text):
 
 # Get the source text starting from the pas list (each pas contain the original sentence from which it has
 # been extracted, there can be multiple pas with the same sentence).
-def get_sources_from_pas_lists(pas_lists):
+def get_sources_from_pas_lists(pas_lists, dots=True):
     sources = []
     for pas_list in pas_lists:
         sentences = []
@@ -187,7 +187,10 @@ def get_sources_from_pas_lists(pas_lists):
 
         ref = ""
         for sent in sentences:
-            ref += sent + ". "
+            if dots:
+                ref += (sent + ". ").replace("..", ".")
+            else:
+                ref += (sent + "\n")
 
         sources.append(ref)
 
@@ -217,7 +220,7 @@ def plot_history(model_name):
 
 # Print some relevant summaries from a batch of texts.
 def sample_summaries(model_name, docs_pas_lists, refs, recall_score_list, batch=-1, summaries=None):
-    docs = get_sources_from_pas_lists(docs_pas_lists)
+    docs = get_sources_from_pas_lists(docs_pas_lists, dots=False)
     if summaries is None:
         summaries = []
         for i in range(len(docs_pas_lists)):
@@ -225,20 +228,27 @@ def sample_summaries(model_name, docs_pas_lists, refs, recall_score_list, batch=
             pas_no = len(docs_pas_lists[i])
             doc_vectors = [np.append(pas.vector, pas.embeddings) for pas in docs_pas_lists[i]]
 
-            # Getting the scores for each sentence predicted by the model (The predict functions accepts lists, so I use a
-            # list of 1 element and get the first result).
+            # Getting the scores for each sentence predicted by the model
+            # (The predict functions accepts lists, so I use a list of 1 element and get the first result).
             pred_scores = model.predict(doc_vectors)[0]
-            # Cutting the scores to the length of the document and arrange them by score preserving the original position.
+            # Cutting the scores to the length of the document and arrange them by score,
+            # preserving the original position.
             scores = pred_scores[:pas_no]
             summaries.append(generate_summary(docs_pas_lists[i], scores))
 
-    rnd_index = 0 #random.randint(1, len(docs))
     best_index = recall_score_list.index(max(recall_score_list))
     worst_index = recall_score_list.index(min(recall_score_list))
 
     avg_recall_score = np.mean(recall_score_list)
     distances = [abs(avg_recall_score - score) for score in recall_score_list]
     avg_index = distances.index(min(distances))
+
+    indices = [0, best_index, worst_index, avg_index]
+    labels = ["FIRST", "BEST", "WORST", "AVERAGE"]
+
+    for i in range(10):
+        indices.append(random.randint(1, len(docs)))
+        labels.append("RANDOM")
 
     with open(result_path + "sample_summaries/" +
               model_name + "_" + str(batch) +
@@ -247,52 +257,13 @@ def sample_summaries(model_name, docs_pas_lists, refs, recall_score_list, batch=
         if batch > -1:
             print("FROM BATCH: " + str(batch), file=dest_f)
 
-        print("FIRST DOCUMENT:", file=dest_f)
-        print("ROUGE 1 RECALL: " + str(recall_score_list[0]), file=dest_f)
-        print("ORIGINAL DOCUMENT:", file=dest_f)
-        print(docs[0], file=dest_f)
-        print("REFERENCE:", file=dest_f)
-        print(refs[0], file=dest_f)
-        print("GENERATED SUMMARY:", file=dest_f)
-        print(summaries[0], file=dest_f)
-        print("=================================", file=dest_f)
-
-        print("RANDOM DOCUMENT (index: " + str(rnd_index) + "):", file=dest_f)
-        print("ROUGE 1 RECALL: " + str(recall_score_list[rnd_index]), file=dest_f)
-        print("ORIGINAL DOCUMENT:", file=dest_f)
-        print(docs[rnd_index], file=dest_f)
-        print("REFERENCE:", file=dest_f)
-        print(refs[rnd_index], file=dest_f)
-        print("GENERATED SUMMARY:", file=dest_f)
-        print(summaries[rnd_index], file=dest_f)
-        print("=================================", file=dest_f)
-
-        print("BEST RECALL DOCUMENT (index: " + str(best_index) + "):", file=dest_f)
-        print("ROUGE 1 RECALL: " + str(recall_score_list[best_index]), file=dest_f)
-        print("ORIGINAL DOCUMENT:", file=dest_f)
-        print(docs[best_index], file=dest_f)
-        print("REFERENCE:", file=dest_f)
-        print(refs[best_index], file=dest_f)
-        print("GENERATED SUMMARY:", file=dest_f)
-        print(summaries[best_index], file=dest_f)
-        print("=================================", file=dest_f)
-
-        print("WORST RECALL DOCUMENT (index: " + str(worst_index) + "):", file=dest_f)
-        print("ROUGE 1 RECALL: " + str(recall_score_list[worst_index]), file=dest_f)
-        print("ORIGINAL DOCUMENT:", file=dest_f)
-        print(docs[worst_index], file=dest_f)
-        print("REFERENCE:", file=dest_f)
-        print(refs[worst_index], file=dest_f)
-        print("GENERATED SUMMARY:", file=dest_f)
-        print(summaries[worst_index], file=dest_f)
-        print("=================================", file=dest_f)
-
-        print("AVERAGE RECALL DOCUMENT (index: " + str(avg_index) + "):", file=dest_f)
-        print("ROUGE 1 RECALL: " + str(recall_score_list[avg_index]), file=dest_f)
-        print("ORIGINAL DOCUMENT:", file=dest_f)
-        print(docs[avg_index], file=dest_f)
-        print("REFERENCE:", file=dest_f)
-        print(refs[avg_index], file=dest_f)
-        print("GENERATED SUMMARY:", file=dest_f)
-        print(summaries[avg_index], file=dest_f)
-        print("=================================", file=dest_f)
+        for i in range(len(indices)):
+            print(labels[i] + " DOCUMENT (index: " + str(indices[i]) + "): ", file=dest_f)
+            print("ROUGE 1 RECALL: " + str(recall_score_list[indices[i]]), file=dest_f)
+            print("ORIGINAL DOCUMENT:", file=dest_f)
+            print(docs[indices[i]], file=dest_f)
+            print("REFERENCE:", file=dest_f)
+            print(refs[indices[i]], file=dest_f)
+            print("GENERATED SUMMARY:", file=dest_f)
+            print(summaries[indices[i]], file=dest_f)
+            print("=================================", file=dest_f)
