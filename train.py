@@ -5,8 +5,7 @@ from summarization import build_model, train_model
 from utils import plot_history
 
 
-def train(series_name, batch_size, epochs):
-    binary = False
+def train(series_name, batch_size, epochs, binary):
     weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                     (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                     (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
@@ -37,4 +36,5 @@ if __name__ == "__main__":
     name = str(sys.argv[1])
     bs = int(sys.argv[2])
     ep = int(sys.argv[3])
-    train(name, bs, ep)
+    bn = bool(sys.argv[4])
+    train(name, bs, ep, bn)

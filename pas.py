@@ -103,7 +103,8 @@ def realize_pas(pas):
 
         # Excluding "not" and modals that might be repeated in the verb fixing process.
         if arg_key != "AM-NEG" and not (arg_key == "AM-MOD" and arg_val in redundant_modals):
-            arg_index = full_sent.find(" " + remove_punct(arg_val) + " ")
+            arg = (" " + remove_punct(arg_val) + " ").replace("  ", " ")
+            arg_index = full_sent.find(arg)
             # Verbs has to be fixed as SENNA clears auxiliaries and modals.
             if arg_key == "V":
                 arg_val = fix_verb(pas)

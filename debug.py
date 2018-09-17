@@ -10,11 +10,18 @@ import keras
 from dataset import get_matrices, get_duc, shuffle_data, get_nyt, \
     store_pas_nyt_dataset, compute_idfs, store_matrices, get_nyt_pas_lists, arrange_nyt_pas_lists, get_duc_pas_lists
 from loss_testing import summary_clustering_score, summary_clustering_score_2
-from summarization import testing, testing_weighted, find_redundant_pas, rouge_score, build_model, train_model, best_pas
+from pas import realize_pas
+from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary
 from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists, sample_summaries, result_path
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
+
+docs_pas_lists, _ = get_nyt_pas_lists(index=0)
+training_no = 666  # includes validation.
+docs_pas_lists = docs_pas_lists[training_no:]
+
+print(realize_pas(docs_pas_lists[0][6]))
 
 """     TESTING WEIGHTED PAS METHOD (SIMPLE)
 weights_list = [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
@@ -50,15 +57,16 @@ for weights in weights_list:
         print("=================================================", file=res_file)
 """
 
-#"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)    DUC
-weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
-                (0.4, 0.6), (0.5, 0.5),(0.6, 0.4), (0.7, 0.3),
-                (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
-
+"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
+weights_list = [(0.0, 1.0),
+                #(0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                #(0.4, 0.6), (0.5, 0.5),(0.6, 0.4), (0.7, 0.3),
+                #(0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+                ]
 for weights in weights_list:
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
-    batches = 35
+    batches = 1
 
     for k in range(batches):
         doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, index=k)
@@ -78,7 +86,8 @@ for weights in weights_list:
 
         max_sent_no = doc_matrix.shape[1]
 
-        for i in range(len(docs_pas_lists)):
+        #for i in range(len(docs_pas_lists)):
+        for i in range(2):
            # print(weights)
            # print(k)
            # print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
@@ -88,35 +97,7 @@ for weights in weights_list:
 
             pred_scores = score_matrix[i, :]
             scores = pred_scores[:pas_no]
-            sorted_scores = [(j, scores[j]) for j in range(len(scores))]
-            sorted_scores.sort(key=lambda tup: -tup[1])
-
-            sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
-            sorted_realized_pas = [pas_list[index].realized_pas for index in sorted_indices]
-            best_pas_list = []
-            best_indices_list = []
-            size = 0
-            j = 0
-            while size < 100 and j < pas_no:
-                redundant_pas = find_redundant_pas(best_pas_list, sorted_realized_pas[j])
-                if redundant_pas is None:
-                    size += len(sorted_realized_pas[j].split())
-                    if size < 100:
-                        best_pas_list.append(sorted_realized_pas[j])
-                        best_indices_list.append(sorted_indices[j])
-                else:
-                    if redundant_pas in best_pas_list:
-                        if size - len(redundant_pas) + len(sorted_realized_pas[j]) < 100:
-                            size = size - len(redundant_pas) + len(sorted_realized_pas[j])
-                            best_pas_list[best_pas_list.index(redundant_pas)] = sorted_realized_pas[j]
-                            best_indices_list[best_pas_list.index(redundant_pas)] = sorted_indices[j]
-                j += 1
-
-            best_indices_list.sort()
-
-            summary = ""
-            for index in best_indices_list:
-                summary += pas_list[index].realized_pas + ".\n"
+            summary = generate_summary(pas_list, scores)
 
             score = rouge_score([summary], [refs[i]])
 
@@ -135,13 +116,13 @@ for weights in weights_list:
     for k in rouge_scores.keys():
         rouge_scores[k] /= 334 * batches
 
-    with open(result_path + "result.txt", "a") as res_file:
+    with open(result_path + "results.txt", "a") as res_file:
         print("maximum score" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
 
 
-#"""
+"""
 
 """        TESTING & TRAINING NYT
 tst = True

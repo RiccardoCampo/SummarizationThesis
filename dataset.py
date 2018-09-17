@@ -313,7 +313,7 @@ def get_nyt_pas_lists(index=0):
 
 
 # Matrix representation is computed and stored.
-def store_matrices(dataset, weights, binary_scores=False, index=0):
+def store_matrices(dataset, weights, binary_scores=False, index=0, only_scores=False):
     if dataset == "duc":
         docs_pas_lists, refs_pas_lists = get_duc_pas_lists()
         dataset_path = "/dataset/duc/duc"
@@ -335,21 +335,27 @@ def store_matrices(dataset, weights, binary_scores=False, index=0):
     # Third dimension, vector representation dimension.
     sent_vec_len = len(docs_pas_lists[0][0].vector) + len(docs_pas_lists[0][0].embeddings)
 
-    # The matrix are initialized as zeros, then they'll filled in with vectors for each docs' sentence.
-    refs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
-    docs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
+    if not only_scores:
+        # The matrix are initialized as zeros, then they'll filled in with vectors for each docs' sentence.
+        refs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
+        docs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
 
-    for i in range(docs_no):
-        for j in range(max_sent_no):
-            if j < len(docs_pas_lists[i]):
-                docs_3d_matrix[i, j, :] = np.append(docs_pas_lists[i][j].vector, docs_pas_lists[i][j].embeddings)
-            if j < len(refs_pas_lists[i]):
-                refs_3d_matrix[i, j, :] = np.append(refs_pas_lists[i][j].vector, refs_pas_lists[i][j].embeddings)
+        for i in range(docs_no):
+            for j in range(max_sent_no):
+                if j < len(docs_pas_lists[i]):
+                    docs_3d_matrix[i, j, :] = np.append(docs_pas_lists[i][j].vector, docs_pas_lists[i][j].embeddings)
+                if j < len(refs_pas_lists[i]):
+                    refs_3d_matrix[i, j, :] = np.append(refs_pas_lists[i][j].vector, refs_pas_lists[i][j].embeddings)
 
-    with open(os.getcwd() + ref_path, "wb") as dest_f:
-        pickle.dump(refs_3d_matrix, dest_f)
-    with open(os.getcwd() + doc_path, "wb") as dest_f:
-        pickle.dump(docs_3d_matrix, dest_f)
+        with open(os.getcwd() + ref_path, "wb") as dest_f:
+            pickle.dump(refs_3d_matrix, dest_f)
+        with open(os.getcwd() + doc_path, "wb") as dest_f:
+            pickle.dump(docs_3d_matrix, dest_f)
+    else:
+        with open(os.getcwd() + ref_path, "rb") as dest_f:
+            refs_3d_matrix = pickle.load(dest_f)
+        with open(os.getcwd() + doc_path, "rb") as dest_f:
+            docs_3d_matrix = pickle.load(dest_f)
 
     scores_matrix = np.zeros((docs_no, max_sent_no))
     for i in range(docs_no):
