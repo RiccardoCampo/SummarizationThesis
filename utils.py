@@ -247,7 +247,7 @@ def sample_summaries(model_name, docs_pas_lists, refs, recall_score_list, batch=
     labels = ["FIRST", "BEST", "WORST", "AVERAGE"]
 
     for i in range(10):
-        indices.append(random.randint(1, len(docs)))
+        indices.append(random.randint(1, len(docs) - 1))
         labels.append("RANDOM")
 
     with open(result_path + "sample_summaries/" +
