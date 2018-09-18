@@ -17,22 +17,40 @@ from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists,
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-for i in range(35):
-    print("refactoring batch: " + str(i))
-    docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=0)
-    print("docs...")
-    for pas_list in docs_pas_lists:
-        for pas in pas_list:
-            pas.realized_pas = realize_pas(pas)
-    print("refs...")
-    for pas_list in refs_pas_lists:
-        for pas in pas_list:
-            pas.realized_pas = realize_pas(pas)
+""" CHECKING DIRECT SPEECH
+docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=0)
+ds_indices = []
 
-    with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_docs_pas" + str(i) + ".dat", "wb") as dest_f:
-        pickle.dump(docs_pas_lists, dest_f)
-    with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_refs_pas" + str(i) + ".dat", "wb") as dest_f:
-        pickle.dump(refs_pas_lists, dest_f)
+for pas_list in docs_pas_lists:
+    size = 0
+    ds_size = 0
+    used_sentences = []
+    for pas in pas_list:
+        original_sentence = pas.sentence
+        if original_sentence not in used_sentences:
+            used_sentences.append(original_sentence)
+
+            trimmed_sentence = re.sub('([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)',
+                                      r'\1 \3',
+                                      original_sentence)
+            trimmed_sentence = re.sub('\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)', r'\2', trimmed_sentence)
+            trimmed_sentence = re.sub('([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"', r'\1', trimmed_sentence)
+            trimmed_sentence = re.sub('\"([a-zA-Z0-9 .,:;\'_\-]+)\"', '', trimmed_sentence)
+
+            size += len(original_sentence)
+            ds_size += len(original_sentence) - len(trimmed_sentence)
+            #print(original_sentence)
+            #print(trimmed_sentence)
+    #print(size)
+    #print(size - ds_size)
+
+    if ds_size / size > 0.15:
+        ds_indices.append(docs_pas_lists.index(pas_list))
+        print(size)
+        print(ds_size)
+
+print(len(ds_indices) / len(docs_pas_lists))
+"""
 
 """  SUMMARIES CHECK
 doc_matrix, ref_matrix, score_matrix = get_matrices((0.0, 1.0), index=0)
@@ -95,16 +113,15 @@ for weights in weights_list:
         print("=================================================", file=res_file)
 """
 
-"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
-weights_list = [(0.0, 1.0),
-                #(0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
-                #(0.4, 0.6), (0.5, 0.5),(0.6, 0.4), (0.7, 0.3),
-                #(0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
-                ]
+#"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
+weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                (0.4, 0.6), (0.5, 0.5),(0.6, 0.4), (0.7, 0.3),
+                (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+
 for weights in weights_list:
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
-    batches = 1
+    batches = 35
 
     for k in range(batches):
         doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, index=k)
@@ -163,7 +180,7 @@ for weights in weights_list:
         print("=================================================", file=res_file)
 
 
-"""
+#"""
 
 """        TESTING & TRAINING NYT
 tst = True
