@@ -125,7 +125,7 @@ for weights in weights_list:
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
     batches = 35
-    # docs_no = 0            # DS
+    docs_no = 0            # DS
 
     for k in range(batches):
         doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, index=k)
@@ -148,36 +148,36 @@ for weights in weights_list:
         for i in range(len(docs_pas_lists)):
             pas_list = docs_pas_lists[i]
 
-            # if direct_speech_ratio(pas_list) < 0.15:          # DS
-            # docs_no += 1                          # DS
-            pas_no = len(pas_list)
-            sent_vec_len = len(pas_list[0].vector) + len(pas_list[0].embeddings)
+            if direct_speech_ratio(pas_list) < 0.15:          # DS
+                docs_no += 1                          # DS
+                pas_no = len(pas_list)
+                sent_vec_len = len(pas_list[0].vector) + len(pas_list[0].embeddings)
 
-            pred_scores = score_matrix[i, :]
-            scores = pred_scores[:pas_no]
+                pred_scores = score_matrix[i, :]
+                scores = pred_scores[:pas_no]
 
-            summary = generate_summary(pas_list, scores, summ_len=len(refs[i].split()))
+                summary = generate_summary(pas_list, scores, summ_len=len(refs[i].split()))
 
-            score = rouge_score([summary], [refs[i]])
+                score = rouge_score([summary], [refs[i]])
 
-            summaries.append(summary)
-            recall_scores_list.append(score["rouge_1_recall"])
+                summaries.append(summary)
+                recall_scores_list.append(score["rouge_1_recall"])
 
-            rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
-            rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
-            rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
-            rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
-            rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
-            rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
+                rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
+                rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
+                rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
+                rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
+                rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
+                rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
 
-        sample_summaries("maximum_scores_LONG" + str(weights), docs_pas_lists, refs, recall_scores_list, summaries=summaries, batch=k)
+        # sample_summaries("maximum_scores_LONG" + str(weights), docs_pas_lists, refs, recall_scores_list, summaries=summaries, batch=k)
 
     for k in rouge_scores.keys():
-        rouge_scores[k] /= 334 * batches
-        # rouge_scores[k] /= docs_no * batches       # DS
+        # rouge_scores[k] /= 334 * batches
+        rouge_scores[k] /= docs_no * batches       # DS
 
     with open(result_path + "results.txt", "a") as res_file:
-        print("maximum score" + str(weights), file=res_file)
+        print("maximum score DS" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
 
