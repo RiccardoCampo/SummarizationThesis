@@ -12,10 +12,33 @@ from dataset import get_matrices, get_duc, shuffle_data, get_nyt, \
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
 from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary
-from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists, sample_summaries, result_path
+from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists, sample_summaries, result_path, \
+    direct_speech_ratio
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
+
+
+"""  TAGS COUNT
+tags_count = {}
+total_count = 0
+for batch in range(35):
+    print("processing batch " + str(batch))
+    docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=batch)
+    for pas_list in refs_pas_lists:
+        for pas in pas_list:
+            for tag in pas.raw_pas.keys():
+                total_count += 1
+                if tag not in tags_count.keys():
+                    tags_count[tag] = 1
+                else:
+                    tags_count[tag] += 1
+
+for key in tags_count.keys():
+    tags_count[key] /= total_count
+
+print(tags_count)
+"""
 
 """ CHECKING DIRECT SPEECH
 docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=0)
@@ -25,29 +48,9 @@ for pas_list in docs_pas_lists:
     size = 0
     ds_size = 0
     used_sentences = []
-    for pas in pas_list:
-        original_sentence = pas.sentence
-        if original_sentence not in used_sentences:
-            used_sentences.append(original_sentence)
 
-            trimmed_sentence = re.sub('([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)',
-                                      r'\1 \3',
-                                      original_sentence)
-            trimmed_sentence = re.sub('\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)', r'\2', trimmed_sentence)
-            trimmed_sentence = re.sub('([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"', r'\1', trimmed_sentence)
-            trimmed_sentence = re.sub('\"([a-zA-Z0-9 .,:;\'_\-]+)\"', '', trimmed_sentence)
-
-            size += len(original_sentence)
-            ds_size += len(original_sentence) - len(trimmed_sentence)
-            #print(original_sentence)
-            #print(trimmed_sentence)
-    #print(size)
-    #print(size - ds_size)
-
-    if ds_size / size > 0.15:
+    if direct_speech_ratio(pas_list) > 0.15:
         ds_indices.append(docs_pas_lists.index(pas_list))
-        print(size)
-        print(ds_size)
 
 print(len(ds_indices) / len(docs_pas_lists))
 """
@@ -122,6 +125,7 @@ for weights in weights_list:
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
     batches = 35
+    # docs_no = 0            # DS
 
     for k in range(batches):
         doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, index=k)
@@ -141,21 +145,18 @@ for weights in weights_list:
 
         max_sent_no = doc_matrix.shape[1]
 
-        for pas_list in docs_pas_lists:
-            for pas in pas_list:
-                pas.realized_pas = realize_pas(pas)
-
         for i in range(len(docs_pas_lists)):
-           # print(weights)
-           # print(k)
-           # print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
             pas_list = docs_pas_lists[i]
+
+            # if direct_speech_ratio(pas_list) < 0.15:          # DS
+            # docs_no += 1                          # DS
             pas_no = len(pas_list)
             sent_vec_len = len(pas_list[0].vector) + len(pas_list[0].embeddings)
 
             pred_scores = score_matrix[i, :]
             scores = pred_scores[:pas_no]
-            summary = generate_summary(pas_list, scores)
+
+            summary = generate_summary(pas_list, scores, summ_len=len(refs[i].split()))
 
             score = rouge_score([summary], [refs[i]])
 
@@ -169,10 +170,11 @@ for weights in weights_list:
             rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
 
-        sample_summaries("maximum_scores", docs_pas_lists, refs, recall_scores_list, summaries=summaries, batch=k)
+        sample_summaries("maximum_scores_LONG" + str(weights), docs_pas_lists, refs, recall_scores_list, summaries=summaries, batch=k)
 
     for k in rouge_scores.keys():
         rouge_scores[k] /= 334 * batches
+        # rouge_scores[k] /= docs_no * batches       # DS
 
     with open(result_path + "results.txt", "a") as res_file:
         print("maximum score" + str(weights), file=res_file)
