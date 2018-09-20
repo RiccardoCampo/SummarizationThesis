@@ -18,14 +18,14 @@ from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists,
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-
 """  TAGS COUNT
+# SRL
 tags_count = {}
 total_count = 0
 for batch in range(35):
     print("processing batch " + str(batch))
     docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=batch)
-    for pas_list in refs_pas_lists:
+    for pas_list in docs_pas_lists:
         for pas in pas_list:
             for tag in pas.raw_pas.keys():
                 total_count += 1
@@ -33,6 +33,29 @@ for batch in range(35):
                     tags_count[tag] = 1
                 else:
                     tags_count[tag] += 1
+
+for key in tags_count.keys():
+    tags_count[key] /= total_count
+
+print(tags_count)
+"""
+"""   POS
+tags_count = {}
+total_count = 0
+#for batch in range(35):
+ #   print("processing batch " + str(batch))
+#docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=batch)
+docs_pas_lists, refs_pas_lists = get_duc_pas_lists()
+for pas_list in refs_pas_lists:
+    for pas in pas_list:
+        # POS is a list of tuples word-POS
+        tags_list = [tup[1] for tup in pas.parts_of_speech]
+        for tag in tags_list:
+            total_count += 1
+            if tag not in tags_count.keys():
+                tags_count[tag] = 1
+            else:
+                tags_count[tag] += 1
 
 for key in tags_count.keys():
     tags_count[key] /= total_count
@@ -116,7 +139,7 @@ for weights in weights_list:
         print("=================================================", file=res_file)
 """
 
-#"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
+"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
 weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                 (0.4, 0.6), (0.5, 0.5),(0.6, 0.4), (0.7, 0.3),
                 (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
@@ -174,7 +197,7 @@ for weights in weights_list:
 
     for k in rouge_scores.keys():
         # rouge_scores[k] /= 334 * batches
-        rouge_scores[k] /= docs_no * batches       # DS
+        rouge_scores[k] /= docs_no       # DS
 
     with open(result_path + "results.txt", "a") as res_file:
         print("maximum score DS" + str(weights), file=res_file)
@@ -182,7 +205,8 @@ for weights in weights_list:
         print("=================================================", file=res_file)
 
 
-#"""
+"""
+
 
 """        TESTING & TRAINING NYT
 tst = True
@@ -252,7 +276,6 @@ for weights in weights_list:
             print("=================================================", file=res_file)
 
 """
-
 
 """# CLUSTERING TEST, ONE BY ONE
 
