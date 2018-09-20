@@ -7,11 +7,13 @@ from summarization import testing
 from utils import sample_summaries, get_sources_from_pas_lists, result_path
 
 
-def test(series_name):
-    binary = False
-    weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
-                    (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
-                    (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+def test(series_name, weights=None):
+    if weights:
+        weights_list = [weights]
+    else:
+        weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                        (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
+                        (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
     batches = 15
     training_no = 666  # includes validation.
 
@@ -21,7 +23,7 @@ def test(series_name):
                         "rouge_2_precision": 0, "rouge_2_f_score": 0}
         recall_list = []
         for index in range(batches):
-            doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
+            doc_matrix, ref_matrix, _ = get_matrices(weights=weights, binary=False, index=index)
             docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
             refs = get_sources_from_pas_lists(refs_pas_lists)
             score, recall_list_part = testing(model_name,
@@ -58,4 +60,8 @@ def test(series_name):
 
 if __name__ == "__main__":
     name = str(sys.argv[1])
+    if sys.argv[2]:
+        w1 = float(sys.argv[2])
+        w2 = float(sys.argv[3])
+        test(name, (w1, w2))
     test(name)
