@@ -59,7 +59,7 @@ if __name__ == "__main__":
     bs = int(sys.argv[2])
     ep = int(sys.argv[3])
     bn = bool(int(sys.argv[4]))
-    if sys.argv[5]:
+    if len(sys.argv) > 6:
         w1 = float(sys.argv[5])
         w2 = float(sys.argv[6])
         train(name, bs, ep, bn, (w1, w2))

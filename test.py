@@ -79,7 +79,7 @@ def test(series_name, weights=None, ds_threshold=0.15):
 
 if __name__ == "__main__":
     name = str(sys.argv[1])
-    if sys.argv[2]:
+    if len(sys.argv) > 2:
         w1 = float(sys.argv[2])
         w2 = float(sys.argv[3])
         test(name, (w1, w2))
