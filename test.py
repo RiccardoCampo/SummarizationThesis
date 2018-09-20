@@ -40,7 +40,7 @@ def test(series_name, weights=None, ds_threshold=0.15):
                 deleted_docs = 0
                 for bad_doc_index in bad_doc_indices:
                     bad_doc_index -= deleted_docs
-                    np.delete(doc_matrix, bad_doc_index, 0)
+                    doc_matrix = np.delete(doc_matrix, bad_doc_index, 0)
                     del docs_pas_lists[bad_doc_index]
                     del refs[bad_doc_index]
                     deleted_docs += 1

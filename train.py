@@ -40,8 +40,8 @@ def train(series_name, batch_size, epochs, binary, weights=None, ds_threshold=0.
                 deleted_docs = 0
                 for bad_doc_index in bad_doc_indices:
                     bad_doc_index -= deleted_docs
-                    np.delete(doc_matrix, bad_doc_index, 0)
-                    np.delete(score_matrix, bad_doc_index, 0)
+                    doc_matrix = np.delete(doc_matrix, bad_doc_index, 0)
+                    score_matrix = np.delete(score_matrix, bad_doc_index, 0)
                     deleted_docs += 1
 
             if index == batches - 1:
