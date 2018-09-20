@@ -14,7 +14,7 @@ from keras.layers import Dense, LSTM, Bidirectional, Masking, Lambda, Activation
 
 
 # Return the best PASs of the source text given the source text, the max number of PASs and the weights.
-from utils import sample_summaries
+from utils import sample_summaries, result_path
 
 
 def best_pas(pas_list, max_pas, weights):
@@ -124,8 +124,11 @@ def build_model(doc_size, vector_size):
 
 
 # Train a pre-compiled model with the provided inputs.
-def train_model(model, model_name, doc_matrix, score_matrix, epochs=1, batch_size=1, save_model=False):
-    set_size = int(doc_matrix.shape[0] / 2)  # Half for training, half for validation.
+def train_model(model, model_name, doc_matrix, score_matrix, epochs=1, batch_size=1, val_size=0, save_model=False):
+    if val_size > 0:
+        set_size = int(doc_matrix.shape[0] - val_size)
+    else:
+        set_size = int(doc_matrix.shape[0] / 2)  # Half for training, half for validation.
 
     print('Loading data...')
     x_train = doc_matrix[:set_size, :, :]
@@ -142,7 +145,7 @@ def train_model(model, model_name, doc_matrix, score_matrix, epochs=1, batch_siz
     if save_model:
         model.save(os.getcwd() + "/models/" + model_name + ".h5")
 
-    history_path = os.getcwd() + "/models/" + model_name + ".hst"
+    history_path = result_path + "histories/" + model_name + ".hst"
     history = history.history
     if os.path.isfile(history_path):
         with open(history_path, "rb") as file:

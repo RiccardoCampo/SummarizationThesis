@@ -8,7 +8,7 @@ import logging
 import keras
 
 from dataset import get_matrices, get_duc, shuffle_data, get_nyt, \
-    store_pas_nyt_dataset, compute_idfs, store_matrices, get_nyt_pas_lists, arrange_nyt_pas_lists, get_duc_pas_lists
+    store_pas_nyt_dataset, compute_idfs, store_matrices, get_pas_lists, arrange_nyt_pas_lists
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
 from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary
@@ -17,31 +17,6 @@ from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists,
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
-
-index = 0
-training_no = 666
-ds_threshold = 0.15
-
-docs_pas_lists, _ = get_nyt_pas_lists(index)
-docs_pas_lists = docs_pas_lists[:training_no]
-
-doc_matrix, _, score_matrix = get_matrices(weights=(0.0, 1.0), index=index)
-doc_matrix = doc_matrix[:training_no, :, :]
-score_matrix = score_matrix[:training_no, :]
-
-bad_doc_indices = []
-for doc_pas_list in docs_pas_lists:
-    if direct_speech_ratio(doc_pas_list) > ds_threshold:
-        bad_doc_indices.append(docs_pas_lists.index(doc_pas_list))
-
-deleted_docs = 0
-for bad_doc_index in bad_doc_indices:
-    bad_doc_index -= deleted_docs
-    doc_matrix = np.delete(doc_matrix, bad_doc_index, 0)
-    score_matrix = np.delete(score_matrix, bad_doc_index, 0)
-    deleted_docs += 1
-
-
 
 """  TAGS COUNT
 # SRL
@@ -164,29 +139,53 @@ for weights in weights_list:
         print("=================================================", file=res_file)
 """
 
-"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
+#"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
+duc_dataset = True
+ds_threshold = -1.0
+
 weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                 (0.4, 0.6), (0.5, 0.5),(0.6, 0.4), (0.7, 0.3),
                 (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
 
+if duc_dataset:
+    batches = 0
+    duc_index = -1
+else:
+    batches = 35
+    duc_index = 0
+
 for weights in weights_list:
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
-    batches = 35
-    docs_no = 0            # DS
 
-    for k in range(batches):
+    docs_no = 0
+    for k in range(duc_index, batches):
         doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, index=k)
-        docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=k)
+        docs_pas_lists, refs_pas_lists = get_pas_lists(index=k)
         refs = get_sources_from_pas_lists(refs_pas_lists)
         # _, refs, _ = get_duc(_duc_path_)       DUC
 
-        training_no = 666       # includes validation.
+        training_no = 422       # includes validation.
 
         docs_pas_lists = docs_pas_lists[training_no:]
         doc_matrix = doc_matrix[training_no:, :, :]
         score_matrix = score_matrix[training_no:, :]
         refs = refs[training_no:]
+
+        if ds_threshold > 0:
+            bad_doc_indices = []
+            for doc_pas_list in docs_pas_lists:
+                if direct_speech_ratio(doc_pas_list) > ds_threshold:
+                    bad_doc_indices.append(docs_pas_lists.index(doc_pas_list))
+
+            deleted_docs = 0
+            for bad_doc_index in bad_doc_indices:
+                bad_doc_index -= deleted_docs
+                doc_matrix = np.delete(doc_matrix, bad_doc_index, 0)
+                score_matrix = np.delete(score_matrix, bad_doc_index, 0)
+                del docs_pas_lists[bad_doc_index]
+                del refs[bad_doc_index]
+                deleted_docs += 1
 
         recall_scores_list = []
         summaries = []
@@ -194,44 +193,43 @@ for weights in weights_list:
         max_sent_no = doc_matrix.shape[1]
 
         for i in range(len(docs_pas_lists)):
+            docs_no += 1
             pas_list = docs_pas_lists[i]
+            pas_no = len(pas_list)
+            sent_vec_len = len(pas_list[0].vector) + len(pas_list[0].embeddings)
 
-            if direct_speech_ratio(pas_list) < 0.15:          # DS
-                docs_no += 1                          # DS
-                pas_no = len(pas_list)
-                sent_vec_len = len(pas_list[0].vector) + len(pas_list[0].embeddings)
+            pred_scores = score_matrix[i, :]
+            scores = pred_scores[:pas_no]
 
-                pred_scores = score_matrix[i, :]
-                scores = pred_scores[:pas_no]
+            summary = generate_summary(pas_list, scores, summ_len=len(refs[i].split()))
 
-                summary = generate_summary(pas_list, scores, summ_len=len(refs[i].split()))
+            score = rouge_score([summary], [refs[i]])
 
-                score = rouge_score([summary], [refs[i]])
+            summaries.append(summary)
+            recall_scores_list.append(score["rouge_1_recall"])
 
-                summaries.append(summary)
-                recall_scores_list.append(score["rouge_1_recall"])
+            rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
+            rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
+            rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
+            rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
+            rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
+            rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
 
-                rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
-                rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
-                rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
-                rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
-                rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
-                rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
-
-        # sample_summaries("maximum_scores_LONG" + str(weights), docs_pas_lists, refs, recall_scores_list, summaries=summaries, batch=k)
+        sample_summaries("maximum_scores_DUC" + str(weights),
+                         docs_pas_lists,
+                         refs,
+                         summaries,
+                         recall_scores_list,
+                         batch=k)
 
     for k in rouge_scores.keys():
-        # rouge_scores[k] /= 334 * batches
-        rouge_scores[k] /= docs_no       # DS
+        rouge_scores[k] /= docs_no
 
     with open(result_path + "results.txt", "a") as res_file:
-        print("maximum score DS" + str(weights), file=res_file)
+        print("maximum score DUC#2" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-
-
-"""
-
+#"""
 
 """        TESTING & TRAINING NYT
 tst = True

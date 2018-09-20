@@ -2,29 +2,38 @@ import pickle
 import sys
 import numpy as np
 
-from dataset import get_matrices, get_nyt_pas_lists
+from dataset import get_matrices, get_pas_lists
 from summarization import testing
 from utils import get_sources_from_pas_lists, result_path, direct_speech_ratio
 
 
-def test(series_name, weights=None, ds_threshold=0.15):
+def test(series_name, dataset, weights=None):
+    ds_threshold = 0.15
+
     if weights:
         weights_list = [weights]
     else:
         weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                         (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                         (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
-    batches = 35
-    training_no = 666  # includes validation.
+
+    if dataset == "nyt":
+        batches = 35
+        duc_index = 0
+        training_no = 666  # includes validation.
+    else:
+        batches = 0
+        duc_index = -1
+        training_no = 422  # includes validation.
 
     for weights in weights_list:
         model_name = series_name + "_" + str(weights)
         rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                         "rouge_2_precision": 0, "rouge_2_f_score": 0}
         recall_list = []
-        for index in range(batches):
+        for index in range(duc_index, batches):
             doc_matrix, _, _ = get_matrices(weights=weights, binary=False, index=index)
-            docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
+            docs_pas_lists, refs_pas_lists = get_pas_lists(index)
             refs = get_sources_from_pas_lists(refs_pas_lists)
 
             docs_pas_lists = docs_pas_lists[training_no:]
@@ -61,7 +70,7 @@ def test(series_name, weights=None, ds_threshold=0.15):
             recall_list.extend(recall_list_part)
 
         for k in rouge_scores.keys():
-            rouge_scores[k] /= batches
+            rouge_scores[k] /= batches - duc_index  # if duc then /1 else /35
 
         with open(result_path + "histories/" + model_name + ".hst", "rb") as file:
             history = pickle.load(file)
@@ -79,8 +88,10 @@ def test(series_name, weights=None, ds_threshold=0.15):
 
 if __name__ == "__main__":
     name = str(sys.argv[1])
-    if len(sys.argv) > 2:
-        w1 = float(sys.argv[2])
-        w2 = float(sys.argv[3])
-        test(name, (w1, w2))
-    test(name)
+    dset = str(sys.argv[2])
+    if len(sys.argv) > 3:
+        w1 = float(sys.argv[3])
+        w2 = float(sys.argv[4])
+        test(name, dset, (w1, w2))
+    else:
+        test(name, dset)

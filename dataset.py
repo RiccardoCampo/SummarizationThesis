@@ -150,19 +150,6 @@ def store_pas_duc_dataset(duc_path):
         pickle.dump(refs_pas_lists, dest_f)
 
 
-# Getting the pas lists of documents and reference summaries.
-def get_duc_pas_lists():
-    doc_path = "/dataset/duc/duc_docs_pas.dat"
-    ref_path = "/dataset/duc/duc_refs_pas.dat"
-
-    with open(os.getcwd() + doc_path, "rb") as docs_f:
-        docs_pas_lists = pickle.load(docs_f)
-    with open(os.getcwd() + ref_path, "rb") as refs_f:
-        refs_pas_lists = pickle.load(refs_f)
-
-    return docs_pas_lists, refs_pas_lists
-
-
 # Retrieve New York Times corpus documents and summaries.
 def get_nyt(nyt_path, min_doc=0, max_doc=100):
     docs = []
@@ -303,22 +290,29 @@ def arrange_nyt_pas_lists(dim=1000, max_len=300, max_file=660000):
         batch += 1
 
 
-# Getting the pas lists of documents and reference summaries. The index represent the batch of compact pas to get.
-def get_nyt_pas_lists(index=0):
-    with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_docs_pas" + str(index) + ".dat", "rb") as docs_f:
-        docs_pas_lists = pickle.load(docs_f)
-    with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_refs_pas" + str(index) + ".dat", "rb") as refs_f:
-        refs_pas_lists = pickle.load(refs_f)
+# Getting the pas lists of documents and reference summaries. The index represent the batch of compact nyt pas to get.
+# Or, if -1, it tells to get duc pas lists.
+def get_pas_lists(index=-1):
+    if index < 0:
+        with open(os.getcwd() + "/dataset/duc/duc_docs_pas.dat", "rb") as docs_f:
+            docs_pas_lists = pickle.load(docs_f)
+        with open(os.getcwd() + "/dataset/duc/duc_refs_pas.dat", "rb") as refs_f:
+            refs_pas_lists = pickle.load(refs_f)
+    else:
+        with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_docs_pas" + str(index) + ".dat", "rb") as docs_f:
+            docs_pas_lists = pickle.load(docs_f)
+        with open(os.getcwd() + "/dataset/nyt/compact/compact_nyt_refs_pas" + str(index) + ".dat", "rb") as refs_f:
+            refs_pas_lists = pickle.load(refs_f)
     return docs_pas_lists, refs_pas_lists
 
 
 # Matrix representation is computed and stored.
 def store_matrices(dataset, weights, binary_scores=False, index=0, only_scores=False):
     if dataset == "duc":
-        docs_pas_lists, refs_pas_lists = get_duc_pas_lists()
+        docs_pas_lists, refs_pas_lists = get_pas_lists(-1)
         dataset_path = "/dataset/duc/duc"
     else:
-        docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
+        docs_pas_lists, refs_pas_lists = get_pas_lists(index)
         dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
 
     # Storing the matrices in the appropriate file, depending on the scoring system.
@@ -397,7 +391,7 @@ def get_matrices(weights, binary=False, index=-1):
 
 # Shuffles the matrices and pas lists with a random permutation (and stores the permutation)
 def shuffle_data(batch):
-    docs_pas_lists, refs_pas_lists = get_duc_pas_lists()
+    docs_pas_lists, refs_pas_lists = get_pas_lists(-1)
     doc_matrix, ref_matrix, _ = get_matrices("duc")
 
     batch_path = "/dataset/batch" + str(batch)
