@@ -7,7 +7,6 @@ from summarization import testing
 from utils import sample_summaries, get_sources_from_pas_lists, result_path
 
 
-
 def test(series_name):
     binary = False
     weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
@@ -43,8 +42,13 @@ def test(series_name):
         for k in rouge_scores.keys():
             rouge_scores[k] /= batches
 
+        with open(os.getcwd() + "/models/" + model_name + ".hst", "rb") as file:
+            history = pickle.load(file)
+        # Get training and test loss histories
+        val_acc = history['val_acc']
+
         with open(result_path + "results.txt", "a") as res_file:
-            print(model_name, file=res_file)
+            print(model_name + "   val_acc: " + str(val_acc[-1]), file=res_file)
             print(rouge_scores, file=res_file)
             print("=================================================", file=res_file)
 

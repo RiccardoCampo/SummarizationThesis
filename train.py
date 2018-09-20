@@ -39,7 +39,7 @@ if __name__ == "__main__":
     name = str(sys.argv[1])
     bs = int(sys.argv[2])
     ep = int(sys.argv[3])
-    bn = bool(sys.argv[4])
+    bn = bool(int(sys.argv[4]))
     if sys.argv[5]:
         w1 = float(sys.argv[5])
         w2 = float(sys.argv[6])
