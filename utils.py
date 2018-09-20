@@ -12,9 +12,6 @@ import tensorflow_hub as hub
 import numpy as np
 
 import matplotlib
-from keras.engine.saving import load_model
-
-from summarization import generate_summary
 
 matplotlib.use("Pdf")
 import matplotlib.pyplot as plt
@@ -219,23 +216,8 @@ def plot_history(model_name):
 
 
 # Print some relevant summaries from a batch of texts.
-def sample_summaries(model_name, docs_pas_lists, refs, recall_score_list, batch=-1, summaries=None):
+def sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_list, batch=-1):
     docs = get_sources_from_pas_lists(docs_pas_lists, dots=False)
-    if summaries is None:
-        summaries = []
-        for i in range(len(docs_pas_lists)):
-            model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
-            pas_no = len(docs_pas_lists[i])
-            doc_vectors = [np.append(pas.vector, pas.embeddings) for pas in docs_pas_lists[i]]
-
-            # Getting the scores for each sentence predicted by the model
-            # (The predict functions accepts lists, so I use a list of 1 element and get the first result).
-            pred_scores = model.predict(doc_vectors)[0]
-            # Cutting the scores to the length of the document and arrange them by score,
-            # preserving the original position.
-            scores = pred_scores[:pas_no]
-            summaries.append(generate_summary(docs_pas_lists[i], scores))
-
     best_index = recall_score_list.index(max(recall_score_list))
     worst_index = recall_score_list.index(min(recall_score_list))
 

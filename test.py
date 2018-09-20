@@ -30,7 +30,8 @@ def test(series_name, weights=None):
                                               docs_pas_lists[training_no:],
                                               doc_matrix[training_no:, :, :],
                                               refs[training_no:],
-                                              True)
+                                              dynamic_summ_len=True,
+                                              batch=index)
 
             rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
             rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
@@ -39,8 +40,6 @@ def test(series_name, weights=None):
             rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
             recall_list.extend(recall_list_part)
-
-            sample_summaries(model_name, docs_pas_lists, refs, recall_list_part, batch=index)
 
         for k in rouge_scores.keys():
             rouge_scores[k] /= batches

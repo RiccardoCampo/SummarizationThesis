@@ -14,6 +14,9 @@ from keras.layers import Dense, LSTM, Bidirectional, Masking, Lambda, Activation
 
 
 # Return the best PASs of the source text given the source text, the max number of PASs and the weights.
+from utils import sample_summaries
+
+
 def best_pas(pas_list, max_pas, weights):
     # Creating a list of PASs and relative scores then ordering it.
     sorted_list = []
@@ -256,13 +259,14 @@ def generate_summary(pas_list, scores, summ_len=100):
 
 
 # Compute rouge scores given a model.
-def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False):
+def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False, batch=0):
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
     recall_score_list = []
 
     model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
     pred_scores = model.predict(doc_matrix, batch_size=1)
+    summaries = []
 
     # Computing the score for each document than compute the average.
     for i in range(len(docs_pas_lists)):
@@ -275,6 +279,7 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False
             summary = generate_summary(docs_pas_lists[i], scores, summ_len=len(refs[i].split()))
         else:
             summary = generate_summary(docs_pas_lists[i], scores, summ_len=100)
+        summaries.append(summary)
 
         # Get the rouge scores.
         score = rouge_score([summary], [refs[i]])
@@ -285,6 +290,8 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False
         rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
         rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
         recall_score_list.append(score["rouge_1_recall"])
+
+    sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_list, batch=batch)
 
     for k in rouge_scores.keys():
         rouge_scores[k] /= len(docs_pas_lists)
