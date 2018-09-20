@@ -14,7 +14,7 @@ def test(series_name, weights=None):
         weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                         (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                         (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
-    batches = 15
+    batches = 35
     training_no = 666  # includes validation.
 
     for weights in weights_list:
@@ -28,8 +28,8 @@ def test(series_name, weights=None):
             refs = get_sources_from_pas_lists(refs_pas_lists)
             score, recall_list_part = testing(model_name,
                                               docs_pas_lists[training_no:],
-                                              doc_matrix[training_no:, :, :],
-                                              refs[training_no:])
+                                              refs[training_no:],
+                                              True)
 
             rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
             rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]

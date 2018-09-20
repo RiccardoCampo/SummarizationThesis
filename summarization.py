@@ -256,7 +256,7 @@ def generate_summary(pas_list, scores, summ_len=100):
 
 
 # Compute rouge scores given a model.
-def testing(model_name, docs_pas_lists, refs, summ_len=100):
+def testing(model_name, docs_pas_lists, refs, dynamic_summ_len=False):
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
     recall_score_list = []
@@ -274,7 +274,10 @@ def testing(model_name, docs_pas_lists, refs, summ_len=100):
         pred_scores = model.predict(doc_vectors)[0]
         # Cutting the scores to the length of the document and arrange them by score preserving the original position.
         scores = pred_scores[:pas_no]
-        summary = generate_summary(docs_pas_lists[i], scores, summ_len=summ_len)
+        if dynamic_summ_len:
+            summary = generate_summary(docs_pas_lists[i], scores, summ_len=len(refs[i].split()))
+        else:
+            summary = generate_summary(docs_pas_lists[i], scores, summ_len=100)
 
         # Get the rouge scores.
         score = rouge_score([summary], [refs[i]])
