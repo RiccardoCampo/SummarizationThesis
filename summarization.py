@@ -261,20 +261,16 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
     recall_score_list = []
 
+    model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
+    pred_scores = model.predict(doc_matrix, batch_size=1)
+
     # Computing the score for each document than compute the average.
     for i in range(len(docs_pas_lists)):
         print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
-
-        model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
         pas_no = len(docs_pas_lists[i])
 
-        doc_vectors = doc_matrix[i, :, :]
-
-        # Getting the scores for each sentence predicted by the model (The predict functions accepts lists, so I use a
-        # list of 1 element and get the first result).
-        pred_scores = model.predict(doc_vectors)[0]
         # Cutting the scores to the length of the document and arrange them by score preserving the original position.
-        scores = pred_scores[:pas_no]
+        scores = pred_scores[i][:pas_no]
         if dynamic_summ_len:
             summary = generate_summary(docs_pas_lists[i], scores, summ_len=len(refs[i].split()))
         else:
