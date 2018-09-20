@@ -256,7 +256,7 @@ def generate_summary(pas_list, scores, summ_len=100):
 
 
 # Compute rouge scores given a model.
-def testing(model_name, docs_pas_lists, refs, dynamic_summ_len=False):
+def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False):
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
     recall_score_list = []
@@ -267,7 +267,8 @@ def testing(model_name, docs_pas_lists, refs, dynamic_summ_len=False):
 
         model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
         pas_no = len(docs_pas_lists[i])
-        doc_vectors = [np.append(pas.vector, pas.embeddings) for pas in docs_pas_lists[i]]
+
+        doc_vectors = doc_matrix[i, :, :]
 
         # Getting the scores for each sentence predicted by the model (The predict functions accepts lists, so I use a
         # list of 1 element and get the first result).

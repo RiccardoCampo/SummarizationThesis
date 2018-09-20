@@ -28,6 +28,7 @@ def test(series_name, weights=None):
             refs = get_sources_from_pas_lists(refs_pas_lists)
             score, recall_list_part = testing(model_name,
                                               docs_pas_lists[training_no:],
+                                              doc_matrix[training_no:, :, :],
                                               refs[training_no:],
                                               True)
 
