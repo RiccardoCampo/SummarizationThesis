@@ -18,6 +18,31 @@ from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists,
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
+index = 0
+training_no = 666
+ds_threshold = 0.15
+
+docs_pas_lists, _ = get_nyt_pas_lists(index)
+docs_pas_lists = docs_pas_lists[:training_no]
+
+doc_matrix, _, score_matrix = get_matrices(weights=(0.0, 1.0), index=index)
+doc_matrix = doc_matrix[:training_no, :, :]
+score_matrix = score_matrix[:training_no, :]
+
+bad_doc_indices = []
+for doc_pas_list in docs_pas_lists:
+    if direct_speech_ratio(doc_pas_list) > ds_threshold:
+        bad_doc_indices.append(docs_pas_lists.index(doc_pas_list))
+
+deleted_docs = 0
+for bad_doc_index in bad_doc_indices:
+    bad_doc_index -= deleted_docs
+    doc_matrix = np.delete(doc_matrix, bad_doc_index, 0)
+    score_matrix = np.delete(score_matrix, bad_doc_index, 0)
+    deleted_docs += 1
+
+
+
 """  TAGS COUNT
 # SRL
 tags_count = {}

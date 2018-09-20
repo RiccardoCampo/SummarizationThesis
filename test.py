@@ -1,13 +1,13 @@
 import pickle
 import sys
-import os
+import numpy as np
 
 from dataset import get_matrices, get_nyt_pas_lists
 from summarization import testing
-from utils import sample_summaries, get_sources_from_pas_lists, result_path
+from utils import get_sources_from_pas_lists, result_path, direct_speech_ratio
 
 
-def test(series_name, weights=None):
+def test(series_name, weights=None, ds_threshold=0.15):
     if weights:
         weights_list = [weights]
     else:
@@ -23,13 +23,32 @@ def test(series_name, weights=None):
                         "rouge_2_precision": 0, "rouge_2_f_score": 0}
         recall_list = []
         for index in range(batches):
-            doc_matrix, ref_matrix, _ = get_matrices(weights=weights, binary=False, index=index)
+            doc_matrix, _, _ = get_matrices(weights=weights, binary=False, index=index)
             docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index)
             refs = get_sources_from_pas_lists(refs_pas_lists)
+
+            docs_pas_lists = docs_pas_lists[training_no:]
+            doc_matrix = doc_matrix[training_no:, :, :]
+            refs = refs[training_no:]
+
+            if ds_threshold > 0:
+                bad_doc_indices = []
+                for doc_pas_list in docs_pas_lists:
+                    if direct_speech_ratio(doc_pas_list) > ds_threshold:
+                        bad_doc_indices.append(docs_pas_lists.index(doc_pas_list))
+
+                deleted_docs = 0
+                for bad_doc_index in bad_doc_indices:
+                    bad_doc_index -= deleted_docs
+                    np.delete(doc_matrix, bad_doc_index, 0)
+                    del docs_pas_lists[bad_doc_index]
+                    del refs[bad_doc_index]
+                    deleted_docs += 1
+
             score, recall_list_part = testing(model_name,
-                                              docs_pas_lists[training_no:],
-                                              doc_matrix[training_no:, :, :],
-                                              refs[training_no:],
+                                              docs_pas_lists,
+                                              doc_matrix,
+                                              refs,
                                               dynamic_summ_len=True,
                                               batch=index)
 
@@ -44,7 +63,7 @@ def test(series_name, weights=None):
         for k in rouge_scores.keys():
             rouge_scores[k] /= batches
 
-        with open(os.getcwd() + "/models/" + model_name + ".hst", "rb") as file:
+        with open(result_path + "histories/" + model_name + ".hst", "rb") as file:
             history = pickle.load(file)
         # Get training and test loss histories
         val_acc = history['val_acc']

@@ -275,3 +275,5 @@ def direct_speech_ratio(pas_list):
             ds_size += len(original_sentence) - len(trimmed_sentence)
 
     return ds_size / size
+
+

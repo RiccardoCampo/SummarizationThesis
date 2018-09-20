@@ -1,11 +1,12 @@
 import sys
+import numpy as np
 
-from dataset import get_matrices
+from dataset import get_matrices, get_nyt_pas_lists
 from summarization import build_model, train_model
-from utils import plot_history
+from utils import plot_history, direct_speech_ratio
 
 
-def train(series_name, batch_size, epochs, binary, weights=None):
+def train(series_name, batch_size, epochs, binary, weights=None, ds_threshold=0.15):
     if weights:
         weights_list = [weights]
     else:
@@ -23,14 +24,32 @@ def train(series_name, batch_size, epochs, binary, weights=None):
 
         model = build_model(doc_size, vector_size)
         for index in range(batches):
-            doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
+            doc_matrix, _, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
+            doc_matrix = doc_matrix[:training_no, :, :]
+            score_matrix = score_matrix[:training_no, :]
+
+            if ds_threshold > 0:
+                docs_pas_lists, _ = get_nyt_pas_lists(index)
+                docs_pas_lists = docs_pas_lists[:training_no]
+
+                bad_doc_indices = []
+                for doc_pas_list in docs_pas_lists:
+                    if direct_speech_ratio(doc_pas_list) > ds_threshold:
+                        bad_doc_indices.append(docs_pas_lists.index(doc_pas_list))
+
+                deleted_docs = 0
+                for bad_doc_index in bad_doc_indices:
+                    bad_doc_index -= deleted_docs
+                    np.delete(doc_matrix, bad_doc_index, 0)
+                    np.delete(score_matrix, bad_doc_index, 0)
+                    deleted_docs += 1
 
             if index == batches - 1:
                 save_model = True
 
             print(weights)
             print("index: " + str(index))
-            train_model(model, model_name, doc_matrix[:training_no, :, :], score_matrix[:training_no, :], epochs=epochs,
+            train_model(model, model_name, doc_matrix, score_matrix, epochs=epochs,
                         batch_size=batch_size, save_model=save_model)
             plot_history(model_name)
 
