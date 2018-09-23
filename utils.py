@@ -195,7 +195,7 @@ def get_sources_from_pas_lists(pas_lists, dots=True):
 
 
 def plot_history(model_name):
-    with open(os.getcwd() + "/models/" + model_name + ".hst", "rb") as file:
+    with open(result_path + "histories/" + model_name + ".hst", "rb") as file:
         history = pickle.load(file)
     # Get training and test loss histories
     training_acc = history['acc']
