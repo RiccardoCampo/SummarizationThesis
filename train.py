@@ -7,7 +7,7 @@ from utils import plot_history, direct_speech_ratio
 
 
 def train(series_name, batch_size, epochs, binary, dataset, weights=None):
-    ds_threshold = 0.15
+    ds_threshold = -0.15
 
     if weights:
         weights_list = [weights]
