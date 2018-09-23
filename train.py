@@ -17,8 +17,8 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
                         (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
     if dataset == "nyt":
         batches = 35
-        train_size = 333
-        val_size = 333
+        train_size = 666
+        val_size = 166
         doc_size = 300
         duc_index = 0
     else:

@@ -18,64 +18,61 @@ from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists,
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-"""  TAGS COUNT
-# SRL
-tags_count = {}
-total_count = 0
-for batch in range(35):
-    print("processing batch " + str(batch))
-    docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=batch)
-    for pas_list in docs_pas_lists:
-        for pas in pas_list:
-            for tag in pas.raw_pas.keys():
-                total_count += 1
-                if tag not in tags_count.keys():
-                    tags_count[tag] = 1
-                else:
-                    tags_count[tag] += 1
 
-for key in tags_count.keys():
-    tags_count[key] /= total_count
-
-print(tags_count)
-"""
-"""   POS
-tags_count = {}
-total_count = 0
-#for batch in range(35):
- #   print("processing batch " + str(batch))
-#docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=batch)
-docs_pas_lists, refs_pas_lists = get_duc_pas_lists()
-for pas_list in refs_pas_lists:
-    for pas in pas_list:
-        # POS is a list of tuples word-POS
-        tags_list = [tup[1] for tup in pas.parts_of_speech]
-        for tag in tags_list:
-            total_count += 1
-            if tag not in tags_count.keys():
-                tags_count[tag] = 1
-            else:
-                tags_count[tag] += 1
-
-for key in tags_count.keys():
-    tags_count[key] /= total_count
-
-print(tags_count)
-"""
-
-""" CHECKING DIRECT SPEECH
-docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=0)
+#""" CHECKING DIRECT SPEECH
+dataset_len = 0
 ds_indices = []
 
-for pas_list in docs_pas_lists:
-    size = 0
-    ds_size = 0
-    used_sentences = []
+duc = False
+if duc:
+    duc_index = -1
+    batches = 0
+else:
+    duc_index = 0
+    batches = 35
 
-    if direct_speech_ratio(pas_list) > 0.15:
-        ds_indices.append(docs_pas_lists.index(pas_list))
+for index in range(duc_index, batches):
+    print("Processing batch: " + str(index))
+    docs_pas_lists, refs_pas_lists = get_pas_lists(index=index)
 
-print(len(ds_indices) / len(docs_pas_lists))
+    for pas_list in docs_pas_lists:
+        size = 0
+        ds_size = 0
+        used_sentences = []
+
+        if direct_speech_ratio(pas_list) > 0.2:
+            ds_indices.append(docs_pas_lists.index(pas_list))
+    dataset_len += len(docs_pas_lists)
+
+print(len(ds_indices) / dataset_len)
+#"""
+
+"""        SUMM RATIO
+
+doc_len = 0
+summ_len = 0
+duc = False
+
+if duc:
+    duc_index = -1
+    batches = 0
+else:
+    duc_index = 0
+    batches = 35
+
+for index in range(duc_index, batches):
+    print("Processing batch: " + str(index))
+    docs_pas_lists, refs_pas_lists = get_pas_lists(index=index)
+    docs = get_sources_from_pas_lists(docs_pas_lists)
+    refs = get_sources_from_pas_lists(refs_pas_lists)
+
+    for doc in docs:
+        doc_len += len(doc.split())
+    for ref in refs:
+        summ_len += len(ref.split())
+
+print((doc_len - summ_len) / doc_len)
+
 """
 
 """  SUMMARIES CHECK
@@ -139,7 +136,7 @@ for weights in weights_list:
         print("=================================================", file=res_file)
 """
 
-#"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
+"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
 duc_dataset = True
 ds_threshold = -1.0
 
@@ -229,7 +226,7 @@ for weights in weights_list:
         print("maximum score DUC#2" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-#"""
+"""
 
 """        TESTING & TRAINING NYT
 tst = True
