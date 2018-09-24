@@ -37,7 +37,7 @@ def test(series_name, dataset, weights=None):
             refs = get_sources_from_pas_lists(refs_pas_lists)
 
             docs_pas_lists = docs_pas_lists[training_no:]
-            doc_matrix = doc_matrix[training_no:, :, :]
+            doc_matrix = doc_matrix[training_no:, :300, :]
             refs = refs[training_no:]
 
             if ds_threshold > 0:
