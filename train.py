@@ -22,14 +22,14 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
         val_size = 166
         doc_size = 300
         duc_index = 0
-        indexes = [-1]
+        indexes = permutation(35)
     else:
         batches = 0
         train_size = 372
         val_size = 50
         doc_size = 385
         duc_index = -1
-        indexes = permutation(35)
+        indexes = [-1]
 
     training_no = train_size + val_size
     vector_size = 134

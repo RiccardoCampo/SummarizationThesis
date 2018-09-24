@@ -1,9 +1,7 @@
-import gc
 import math
 import os
 import pickle
 import re
-import sys
 import xml.etree.ElementTree
 from time import time
 
