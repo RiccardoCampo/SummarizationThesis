@@ -22,7 +22,16 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
         val_size = 166
         doc_size = 300
         duc_index = 0
-        indexes = permutation(35)
+        #indexes = permutation(35)
+        indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                   10, 11, 12, 13, 14, 15, 16, 17, 18,
+                   #19,
+                   20, 21,
+                   #22,
+                   23, 24, 25, 26,
+                   #27,
+                   28, 29,
+                   30, 31, 32, 33, 34]
     else:
         batches = 0
         train_size = 372
