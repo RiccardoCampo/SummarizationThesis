@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+from numpy.random.mtrand import permutation
 
 from dataset import get_matrices, get_pas_lists
 from summarization import build_model, train_model
@@ -21,12 +22,14 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
         val_size = 166
         doc_size = 300
         duc_index = 0
+        indexes = [-1]
     else:
         batches = 0
         train_size = 372
         val_size = 50
         doc_size = 385
         duc_index = -1
+        indexes = permutation(35)
 
     training_no = train_size + val_size
     vector_size = 134
@@ -39,7 +42,8 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
         save_model = False
 
         model = build_model(doc_size, vector_size)
-        for index in range(duc_index, batches):
+        #for index in range(duc_index, batches):
+        for index in indexes:
             doc_matrix, _, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
             doc_matrix = doc_matrix[:training_no, :, :]
             score_matrix = score_matrix[:training_no, :]
