@@ -22,7 +22,7 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
         val_size = 166
         doc_size = 300
         duc_index = 0
-        #indexes = permutation(35)
+        #indices = permutation(35)
         indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
                    10, 11, 12, 13, 14, 15, 16, 17, 18,
                    #19,
@@ -38,7 +38,7 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
         val_size = 50
         doc_size = 385
         duc_index = -1
-        indexes = [-1]
+        indices = [-1]
 
     training_no = train_size + val_size
     vector_size = 134
@@ -52,7 +52,7 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
 
         model = build_model(doc_size, vector_size)
         #for index in range(duc_index, batches):
-        for index in indexes:
+        for index in indices:
             doc_matrix, _, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
             doc_matrix = doc_matrix[:training_no, :, :]
             score_matrix = score_matrix[:training_no, :]
