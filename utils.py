@@ -11,11 +11,6 @@ import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
 
-import matplotlib
-
-matplotlib.use("Pdf")
-import matplotlib.pyplot as plt
-
 from nltk import word_tokenize, PorterStemmer
 from nltk.corpus import stopwords
 
@@ -23,11 +18,6 @@ stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 embedder = hub.Module("https://tfhub.dev/google/random-nnlm-en-dim128/1")
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-
-if os.name == "posix":
-    result_path = "/home/arcslab/Documents/Riccardo_Campo/results/"
-else:
-    result_path = "C:/Users/Riccardo/Desktop/temp_results/"
 
 
 # Preprocessing the input text to make it ready for the SRL
@@ -194,27 +184,6 @@ def get_sources_from_pas_lists(pas_lists, dots=True):
     return sources
 
 
-def plot_history(model_name):
-    with open(result_path + "histories/" + model_name + ".hst", "rb") as file:
-        history = pickle.load(file)
-    # Get training and test loss histories
-    training_acc = history['acc']
-    test_acc = history['val_acc']
-
-    # Create count of the number of epochs
-    epoch_count = range(1, len(training_acc) + 1)
-
-    # Visualize loss history
-    plt.plot(epoch_count, training_acc, 'r--')
-    plt.plot(epoch_count, test_acc, 'b-')
-    plt.legend(['Training Accuracy', 'Test Accuracy'])
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.show()
-    plt.savefig(result_path + "histories/" + model_name + ".pdf")
-    plt.close()
-
-
 # Print some relevant summaries from a batch of texts.
 def sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_list, batch=-1):
     docs = get_sources_from_pas_lists(docs_pas_lists, dots=False)
@@ -232,7 +201,7 @@ def sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_l
         indices.append(random.randint(1, len(docs) - 1))
         labels.append("RANDOM")
 
-    with open(result_path + "sample_summaries/" +
+    with open(os.getcwd() + "/results/sample_summaries/" +
               model_name + "_" + str(batch) +
               "_sample_summaries.txt", "w") as dest_f:
         print("SAMPLES EXTRACTED USING MODEL:" + model_name, file=dest_f)

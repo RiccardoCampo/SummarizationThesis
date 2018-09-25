@@ -2,6 +2,7 @@ import os
 import pickle
 
 import numpy as np
+from keras.callbacks import TensorBoard
 
 from numpy.linalg import norm
 from sklearn.cluster import KMeans
@@ -14,7 +15,7 @@ from keras.layers import Dense, LSTM, Bidirectional, Masking, Lambda, Activation
 
 
 # Return the best PASs of the source text given the source text, the max number of PASs and the weights.
-from utils import sample_summaries, result_path
+from utils import sample_summaries
 
 
 def best_pas(pas_list, max_pas, weights):
@@ -137,16 +138,20 @@ def train_model(model, model_name, doc_matrix, score_matrix, epochs=1, batch_siz
     y_train = score_matrix[:set_size, :]
     y_test = score_matrix[set_size:, :]
 
+    log_path = os.getcwd() + "/results/logs/" + model_name
+    tensorboard = TensorBoard(log_dir=log_path)
+
     print('Train...')
     history = model.fit(x_train, y_train,
                         batch_size=batch_size,
                         epochs=epochs,
-                        validation_data=[x_test, y_test])
+                        validation_data=[x_test, y_test],
+                        callbacks=[tensorboard])
 
     if save_model:
         model.save(os.getcwd() + "/models/" + model_name + ".h5")
 
-    history_path = result_path + "histories/" + model_name + ".hst"
+    history_path = os.getcwd() + "/results/histories/" + model_name + ".hst"
     history = history.history
     if os.path.isfile(history_path):
         with open(history_path, "rb") as file:

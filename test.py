@@ -1,10 +1,11 @@
+import os
 import pickle
 import sys
 import numpy as np
 
 from dataset import get_matrices, get_pas_lists
 from summarization import testing
-from utils import get_sources_from_pas_lists, result_path, direct_speech_ratio
+from utils import get_sources_from_pas_lists, direct_speech_ratio
 
 
 def test(series_name, dataset, weights=None):
@@ -72,17 +73,17 @@ def test(series_name, dataset, weights=None):
         for k in rouge_scores.keys():
             rouge_scores[k] /= batches - duc_index  # if duc then /1 else /35
 
-        with open(result_path + "histories/" + model_name + ".hst", "rb") as file:
+        with open(os.getcwd() + "/results/histories/" + model_name + ".hst", "rb") as file:
             history = pickle.load(file)
         # Get training and test loss histories
         val_acc = history['val_acc']
 
-        with open(result_path + "results.txt", "a") as res_file:
+        with open(os.getcwd() + "/results/results.txt", "a") as res_file:
             print(model_name + "   val_acc: " + str(val_acc[-1]), file=res_file)
             print(rouge_scores, file=res_file)
             print("=================================================", file=res_file)
 
-        with open(result_path + "recall_lists/" + model_name + "_rc_list.dat", "wb") as list_file:
+        with open(os.getcwd() + "/results/recall_lists/" + model_name + "_rc_list.dat", "wb") as list_file:
             pickle.dump(recall_list, list_file)
 
 

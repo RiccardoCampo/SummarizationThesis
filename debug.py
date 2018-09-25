@@ -12,8 +12,7 @@ from dataset import get_matrices, get_duc, shuffle_data, get_nyt, \
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
 from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary
-from utils import sentence_embeddings, plot_history, get_sources_from_pas_lists, sample_summaries, result_path, \
-    direct_speech_ratio
+from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"

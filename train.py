@@ -4,7 +4,7 @@ from numpy.random.mtrand import permutation
 
 from dataset import get_matrices, get_pas_lists
 from summarization import build_model, train_model
-from utils import plot_history, direct_speech_ratio
+from utils import direct_speech_ratio
 
 
 def train(series_name, batch_size, epochs, binary, dataset, weights=None):
@@ -75,8 +75,6 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
             print("index: " + str(index))
             train_model(model, model_name, doc_matrix, score_matrix, epochs=epochs,
                         batch_size=batch_size, val_size=val_size, save_model=save_model)
-            plot_history(model_name)
-
 
 if __name__ == "__main__":
     name = str(sys.argv[1])
