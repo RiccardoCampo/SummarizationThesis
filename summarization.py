@@ -109,7 +109,8 @@ def build_model(doc_size, vector_size):
     # blstm = Bidirectional(LSTM(doc_size), merge_mode="ave")(mask)
 
     dense = Dense(doc_size)(blstm)
-    # dense = Dense(doc_size)(dense)
+    dense = Dense(doc_size)(dense)
+    dense = Dense(doc_size)(dense)
 
     output = Activation("relu")(dense)
     # output = Lambda(crop)([output, inputs])
