@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 
@@ -9,13 +10,13 @@ from sklearn.cluster import KMeans
 from pyrouge import Rouge155
 
 from keras import Input, Model
-from keras.engine.saving import load_model
+from keras.engine.saving import load_model, model_from_json
 from keras import backend as K
 from keras.layers import Dense, LSTM, Bidirectional, Masking, Lambda, Activation
 
 
 # Return the best PASs of the source text given the source text, the max number of PASs and the weights.
-from utils import sample_summaries
+from utils import sample_summaries, direct_speech_ratio
 
 
 def best_pas(pas_list, max_pas, weights):
@@ -126,7 +127,8 @@ def build_model(doc_size, vector_size):
 
 
 # Train a pre-compiled model with the provided inputs.
-def train_model(model, model_name, doc_matrix, score_matrix, epochs=1, batch_size=1, val_size=0, save_model=False):
+def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
+                epochs=1, batch_size=1, val_size=0, save_model=False):
     if val_size > 0:
         set_size = int(doc_matrix.shape[0] - val_size)
     else:
@@ -146,10 +148,13 @@ def train_model(model, model_name, doc_matrix, score_matrix, epochs=1, batch_siz
                         batch_size=batch_size,
                         epochs=epochs,
                         validation_data=[x_test, y_test],
-                        callbacks=[tensorboard])
+                        callbacks=[tensorboard],
+                        initial_epoch = initial_epoch)
 
     if save_model:
-        model.save(os.getcwd() + "/models/" + model_name + ".h5")
+        with open(os.getcwd() + "/models/" + model_name + "_arch.json", "w") as jf:
+            json.dump(model.to_json(), jf)
+        model.save_weights(os.getcwd() + "/models/" + model_name + "_weights.h5")
 
     history_path = os.getcwd() + "/results/histories/" + model_name + ".hst"
     history = history.history
@@ -187,8 +192,9 @@ def crop(x):
 
 # Returns the predicted scores given model name and documents.
 def predict_scores(model_name, docs):
-    model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
-    return model.predict(docs)
+    model = model_from_json(os.getcwd() + "/models/" + model_name + "_arch.json")
+    model.load_weights(os.getcwd() + "/models/" + model_name + "_weights.h5")
+    return model.predict(docs, batch_size=1)
 
 
 # Return the ROUGE evaluation given source and reference summary
@@ -268,37 +274,38 @@ def generate_summary(pas_list, scores, summ_len=100):
 
 
 # Compute rouge scores given a model.
-def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False, batch=0):
+def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False, batch=0, rem_ds=False):
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
     recall_score_list = []
 
-    model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
-    pred_scores = model.predict(doc_matrix, batch_size=1)
+    pred_scores = predict_scores(model_name, doc_matrix)
     summaries = []
 
     # Computing the score for each document than compute the average.
     for i in range(len(docs_pas_lists)):
-        print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
-        pas_no = len(docs_pas_lists[i])
+        if direct_speech_ratio(docs_pas_lists[i]) < 0.15 or not rem_ds:
+            print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
+            pas_no = len(docs_pas_lists[i])
 
-        # Cutting the scores to the length of the document and arrange them by score preserving the original position.
-        scores = pred_scores[i][:pas_no]
-        if dynamic_summ_len:
-            summary = generate_summary(docs_pas_lists[i], scores, summ_len=len(refs[i].split()))
-        else:
-            summary = generate_summary(docs_pas_lists[i], scores, summ_len=100)
-        summaries.append(summary)
+            # Cutting the scores to the length of the document and arrange them by score
+            # preserving the original position.
+            scores = pred_scores[i][:pas_no]
+            if dynamic_summ_len:
+                summary = generate_summary(docs_pas_lists[i], scores, summ_len=len(refs[i].split()))
+            else:
+                summary = generate_summary(docs_pas_lists[i], scores, summ_len=100)
+            summaries.append(summary)
 
-        # Get the rouge scores.
-        score = rouge_score([summary], [refs[i]])
-        rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
-        rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
-        rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
-        rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
-        rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
-        rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
-        recall_score_list.append(score["rouge_1_recall"])
+            # Get the rouge scores.
+            score = rouge_score([summary], [refs[i]])
+            rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
+            rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
+            rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
+            rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
+            rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
+            rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
+            recall_score_list.append(score["rouge_1_recall"])
 
     sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_list, batch=batch)
 

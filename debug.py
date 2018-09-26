@@ -18,7 +18,7 @@ _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
 
-#""" CHECKING DIRECT SPEECH
+""" CHECKING DIRECT SPEECH
 dataset_len = 0
 ds_indices = []
 
@@ -44,7 +44,7 @@ for index in range(duc_index, batches):
     dataset_len += len(docs_pas_lists)
 
 print(len(ds_indices) / dataset_len)
-#"""
+"""
 
 """        SUMM RATIO
 

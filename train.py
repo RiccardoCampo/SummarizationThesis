@@ -1,15 +1,9 @@
 import sys
-import numpy as np
-from numpy.random.mtrand import permutation
-
-from dataset import get_matrices, get_pas_lists
+from dataset import get_matrices
 from summarization import build_model, train_model
-from utils import direct_speech_ratio
 
 
 def train(series_name, batch_size, epochs, binary, dataset, weights=None):
-    ds_threshold = -0.15
-
     if weights:
         weights_list = [weights]
     else:
@@ -52,29 +46,15 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
             doc_matrix = doc_matrix[:training_no, :, :]
             score_matrix = score_matrix[:training_no, :]
 
-            if ds_threshold > 0:
-                docs_pas_lists, _ = get_pas_lists(index)
-                docs_pas_lists = docs_pas_lists[:training_no]
-
-                bad_doc_indices = []
-                for doc_pas_list in docs_pas_lists:
-                    if direct_speech_ratio(doc_pas_list) > ds_threshold:
-                        bad_doc_indices.append(docs_pas_lists.index(doc_pas_list))
-
-                deleted_docs = 0
-                for bad_doc_index in bad_doc_indices:
-                    bad_doc_index -= deleted_docs
-                    doc_matrix = np.delete(doc_matrix, bad_doc_index, 0)
-                    score_matrix = np.delete(score_matrix, bad_doc_index, 0)
-                    deleted_docs += 1
-
             if index == batches - 1:
                 save_model = True
 
             print(weights)
             print("index: " + str(index))
-            train_model(model, model_name, doc_matrix, score_matrix, epochs=epochs,
+            init_ep = index - 1 if index > 0 else 0
+            train_model(model, model_name, doc_matrix, score_matrix, init_ep, epochs=epochs,
                         batch_size=batch_size, val_size=val_size, save_model=save_model)
+
 
 if __name__ == "__main__":
     name = str(sys.argv[1])

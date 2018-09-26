@@ -1,16 +1,13 @@
 import os
 import pickle
 import sys
-import numpy as np
 
 from dataset import get_matrices, get_pas_lists
 from summarization import testing
-from utils import get_sources_from_pas_lists, direct_speech_ratio
+from utils import get_sources_from_pas_lists
 
 
 def test(series_name, dataset, weights=None):
-    ds_threshold = 0.15
-
     if weights:
         weights_list = [weights]
     else:
@@ -41,26 +38,13 @@ def test(series_name, dataset, weights=None):
             doc_matrix = doc_matrix[training_no:, :300, :]
             refs = refs[training_no:]
 
-            if ds_threshold > 0:
-                bad_doc_indices = []
-                for doc_pas_list in docs_pas_lists:
-                    if direct_speech_ratio(doc_pas_list) > ds_threshold:
-                        bad_doc_indices.append(docs_pas_lists.index(doc_pas_list))
-
-                deleted_docs = 0
-                for bad_doc_index in bad_doc_indices:
-                    bad_doc_index -= deleted_docs
-                    doc_matrix = np.delete(doc_matrix, bad_doc_index, 0)
-                    del docs_pas_lists[bad_doc_index]
-                    del refs[bad_doc_index]
-                    deleted_docs += 1
-
             score, recall_list_part = testing(model_name,
                                               docs_pas_lists,
                                               doc_matrix,
                                               refs,
                                               dynamic_summ_len=True,
-                                              batch=index)
+                                              batch=index,
+                                              rem_ds=True)
 
             rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
             rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
