@@ -128,7 +128,7 @@ def build_model(doc_size, vector_size):
 
 # Train a pre-compiled model with the provided inputs.
 def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
-                epochs=1, batch_size=1, val_size=0, save_model=False):
+                epochs, batch_size=1, val_size=0, save_model=False):
     if val_size > 0:
         set_size = int(doc_matrix.shape[0] - val_size)
     else:

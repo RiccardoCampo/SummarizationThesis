@@ -49,12 +49,12 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
             if index == batches - 1:
                 save_model = True
 
-            init_ep = index - 1 if index > 0 else 0
+            init_ep = index if index >= 0 else 0
 
             print(weights)
             print("index: " + str(index))
             print("init_epoch: " + str(init_ep))
-            train_model(model, model_name, doc_matrix, score_matrix, init_ep, epochs=epochs,
+            train_model(model, model_name, doc_matrix, score_matrix, init_ep, init_ep + epochs,
                         batch_size=batch_size, val_size=val_size, save_model=save_model)
 
 
