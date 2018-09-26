@@ -3,7 +3,7 @@ from dataset import get_matrices
 from summarization import build_model, train_model
 
 
-def train(series_name, batch_size, epochs, binary, dataset, weights=None):
+def train(series_name, seq_at_end, dense_layers, batch_size, epochs, binary, dataset, weights=None):
     if weights:
         weights_list = [weights]
     else:
@@ -39,7 +39,7 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
             model_name = series_name + "_" + str(batch_size) + "_" + str(epochs) + "_" + str(weights)
         save_model = False
 
-        model = build_model(doc_size, vector_size)
+        model = build_model(doc_size, vector_size, True, 0)
         for index in range(duc_index, batches):
         #for index in indices:
             doc_matrix, _, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
@@ -52,21 +52,22 @@ def train(series_name, batch_size, epochs, binary, dataset, weights=None):
             init_ep = index if index >= 0 else 0
 
             print(weights)
-            print("index: " + str(index))
-            print("init_epoch: " + str(init_ep))
+            print("batch: " + str(index))
             train_model(model, model_name, doc_matrix, score_matrix, init_ep, init_ep + epochs,
                         batch_size=batch_size, val_size=val_size, save_model=save_model)
 
 
 if __name__ == "__main__":
     name = str(sys.argv[1])
-    bs = int(sys.argv[2])
-    ep = int(sys.argv[3])
-    bn = bool(int(sys.argv[4]))
-    dset = str(sys.argv[5])
-    if len(sys.argv) > 7:
-        w1 = float(sys.argv[6])
-        w2 = float(sys.argv[7])
-        train(name, bs, ep, bn, dset, (w1, w2))
+    sq = int(sys.argv[2])
+    dn = bool(int(sys.argv[3]))
+    bs = int(sys.argv[4])
+    ep = int(sys.argv[5])
+    bn = bool(int(sys.argv[6]))
+    dset = str(sys.argv[7])
+    if len(sys.argv) > 8:
+        w1 = float(sys.argv[8])
+        w2 = float(sys.argv[9])
+        train(name, sq, dn, bs, ep, bn, dset, (w1, w2))
     else:
-        train(name, bs, ep, bn, dset)
+        train(name, sq, dn, bs, ep, bn, dset)

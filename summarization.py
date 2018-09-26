@@ -101,26 +101,26 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
 
 
 # Initialize and compile a model for the specific dimensions.
-def build_model(doc_size, vector_size):
+def build_model(doc_size, vector_size, seq_at_the_end, dense_layers):
     inputs = Input(shape=(doc_size, vector_size))
     mask = Masking(mask_value=0.0)(inputs)
 
-    blstm = Bidirectional(LSTM(1, return_sequences=True), merge_mode="ave")(mask)
-    blstm = Lambda(lambda x: K.squeeze(x, -1))(blstm)
+    if seq_at_the_end:
+        blstm = Bidirectional(LSTM(doc_size), merge_mode="ave")(mask)
+    else:
+        blstm = Bidirectional(LSTM(1, return_sequences=True), merge_mode="ave")(mask)
+        blstm = Lambda(lambda x: K.squeeze(x, -1))(blstm)
 
-    # blstm = Bidirectional(LSTM(doc_size), merge_mode="ave")(mask)
+    for i in range(dense_layers):
+        blstm = Dense(doc_size)(blstm)
 
-    dense = Dense(doc_size)(blstm)
-    dense = Dense(doc_size)(dense)
-    dense = Dense(doc_size)(dense)
-
-    output = Activation("relu")(dense)
-    # output = Lambda(crop)([output, inputs])
+    output = Activation("relu")(blstm)
+    if seq_at_the_end:
+        output = Lambda(crop)([output, inputs])
 
     model = Model(inputs=inputs, outputs=output)
     model.compile('adam', 'mse', metrics=['accuracy'])
 
-    # print(model.predict(doc_matrix[2:3, :, :]))
     print(model.summary())
 
     return model
@@ -134,7 +134,6 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
     else:
         set_size = int(doc_matrix.shape[0] / 2)  # Half for training, half for validation.
 
-    print('Loading data...')
     x_train = doc_matrix[:set_size, :, :]
     x_test = doc_matrix[set_size:, :, :]
     y_train = score_matrix[:set_size, :]
@@ -143,7 +142,6 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
     log_path = os.getcwd() + "/results/logs/" + model_name
     tensorboard = TensorBoard(log_dir=log_path)
 
-    print('Train...')
     history = model.fit(x_train, y_train,
                         batch_size=batch_size,
                         epochs=epochs,

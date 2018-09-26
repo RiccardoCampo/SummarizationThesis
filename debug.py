@@ -7,7 +7,7 @@ import numpy as np
 import logging
 import keras
 
-from dataset import get_matrices, get_duc, shuffle_data, get_nyt, \
+from dataset import get_matrices, get_duc, get_nyt, \
     store_pas_nyt_dataset, compute_idfs, store_matrices, get_pas_lists, arrange_nyt_pas_lists
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
@@ -16,7 +16,6 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
-
 
 """ CHECKING DIRECT SPEECH
 dataset_len = 0
