@@ -335,3 +335,23 @@ def testing_weighted(docs_pas_lists, refs, weights, summ_len=100):
     for k in rouge_scores.keys():
         rouge_scores[k] /= len(docs_pas_lists)
     return rouge_scores
+
+
+# Assign scores to each pas in the document
+def score_document_2(doc_vectors, ref_vectors):
+    max_len = len(doc_vectors)
+    scores = np.zeros(max_len)
+    doc_vectors = doc_vectors[~np.all(doc_vectors == 0, axis=1)]
+    ref_vectors = ref_vectors[~np.all(ref_vectors == 0, axis=1)]
+    features_no = 6
+    doc_emb_vectors = [doc_vector[features_no:] for doc_vector in doc_vectors]
+    ref_emb_vectors = [ref_vector[features_no:] for ref_vector in ref_vectors]
+
+    for ref_emb in ref_emb_vectors:
+        distances = [np.linalg.norm(ref_emb - doc_emb) for doc_emb in doc_emb_vectors]
+        min_index = distances.index(min(distances))
+        while scores[min_index] == 1:
+            distances[min_index] += 1000
+            min_index = distances.index(min(distances))
+        scores[min_index] = 1
+    return scores

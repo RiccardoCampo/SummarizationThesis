@@ -49,7 +49,7 @@ def train(series_name, seq_at_end, dense_layers, batch_size, epochs, binary, dat
             if index == batches - 1:
                 save_model = True
 
-            init_ep = index if index >= 0 else 0
+            init_ep = (index if index >= 0 else 0) * epochs
 
             print(weights)
             print("batch: " + str(index))
