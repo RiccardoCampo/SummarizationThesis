@@ -190,7 +190,8 @@ def crop(x):
 
 # Returns the predicted scores given model name and documents.
 def predict_scores(model_name, docs):
-    model = model_from_json(os.getcwd() + "/models/" + model_name + "_arch.json")
+    with open(os.getcwd() + "/models/" + model_name + "_arch.json") as jf:
+        model = model_from_json(json.load(jf))
     model.load_weights(os.getcwd() + "/models/" + model_name + "_weights.h5")
     return model.predict(docs, batch_size=1)
 

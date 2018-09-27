@@ -5,6 +5,7 @@ import tensorflow_hub as hub
 import tensorflow as tf
 import numpy as np
 import logging
+import json
 import keras
 
 from dataset import get_matrices, get_duc, get_nyt, \
@@ -12,13 +13,12 @@ from dataset import get_matrices, get_duc, get_nyt, \
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
 from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary, \
-    score_document_2
+    score_document_2, predict_scores
 from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-build_model(10, 134, 1, 1)
 
 """ CHECKING DIRECT SPEECH
 dataset_len = 0
