@@ -150,7 +150,7 @@ if duc_dataset:
     duc_index = -1
 else:
     batches = 35
-    duc_index = 34
+    duc_index = 0
 
 for weights in weights_list:
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
