@@ -1,4 +1,3 @@
-import json
 import os
 import pickle
 
@@ -10,7 +9,7 @@ from sklearn.cluster import KMeans
 from pyrouge import Rouge155
 
 from keras import Input, Model
-from keras.engine.saving import load_model, model_from_json
+from keras.engine.saving import load_model
 from keras import backend as K
 from keras.layers import Dense, LSTM, Bidirectional, Masking, Lambda, Activation
 
@@ -119,7 +118,7 @@ def build_model(doc_size, vector_size, seq_at_the_end, dense_layers):
         output = Lambda(crop)([output, inputs])
 
     model = Model(inputs=inputs, outputs=output)
-    model.compile('adam', 'mse', metrics=['accuracy'])
+    model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
 
     print(model.summary())
 
@@ -150,9 +149,7 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
                         initial_epoch = initial_epoch)
 
     if save_model:
-        with open(os.getcwd() + "/models/" + model_name + "_arch.json", "w") as jf:
-            json.dump(model.to_json(), jf)
-        model.save_weights(os.getcwd() + "/models/" + model_name + "_weights.h5")
+        model.save(os.getcwd() + "/models/" + model_name + ".h5")
 
     history_path = os.getcwd() + "/results/histories/" + model_name + ".hst"
     history = history.history
@@ -190,9 +187,7 @@ def crop(x):
 
 # Returns the predicted scores given model name and documents.
 def predict_scores(model_name, docs):
-    with open(os.getcwd() + "/models/" + model_name + "_arch.json") as jf:
-        model = model_from_json(json.load(jf))
-    model.load_weights(os.getcwd() + "/models/" + model_name + "_weights.h5")
+    model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
     return model.predict(docs, batch_size=1)
 
 

@@ -5,7 +5,6 @@ import tensorflow_hub as hub
 import tensorflow as tf
 import numpy as np
 import logging
-import json
 import keras
 
 from dataset import get_matrices, get_duc, get_nyt, \
