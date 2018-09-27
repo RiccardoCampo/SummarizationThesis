@@ -8,7 +8,7 @@ import logging
 import keras
 
 from dataset import get_matrices, get_duc, get_nyt, \
-    store_pas_nyt_dataset, compute_idfs, store_matrices, get_pas_lists, arrange_nyt_pas_lists
+    store_pas_nyt_dataset, compute_idfs, store_matrices, get_pas_lists, arrange_nyt_pas_lists, store_score_matrices_2
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
 from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary, \
@@ -18,10 +18,7 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-doc_matrix, ref_matrix, _ = get_matrices((0.0, 1.0))
-print(ref_matrix[0, :, 7])
-print(doc_matrix[0, :, 7])
-print(score_document_2(doc_matrix[0, :, :], ref_matrix[0, :, :]))
+build_model(10, 134, 1, 1)
 
 """ CHECKING DIRECT SPEECH
 dataset_len = 0

@@ -59,8 +59,8 @@ def train(series_name, seq_at_end, dense_layers, batch_size, epochs, binary, dat
 
 if __name__ == "__main__":
     name = str(sys.argv[1])
-    sq = int(sys.argv[2])
-    dn = bool(int(sys.argv[3]))
+    sq = bool(int(sys.argv[2]))
+    dn = int(sys.argv[3])
     bs = int(sys.argv[4])
     ep = int(sys.argv[5])
     bn = bool(int(sys.argv[6]))

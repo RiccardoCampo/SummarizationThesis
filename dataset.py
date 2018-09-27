@@ -9,7 +9,7 @@ import numpy as np
 from numpy.random.mtrand import permutation
 
 from pas import extract_pas
-from summarization import score_document
+from summarization import score_document, score_document_2
 from utils import stem_and_stopword, text_cleanup, tokens, timer
 
 
@@ -340,7 +340,7 @@ def store_matrices(index):
         pickle.dump(docs_3d_matrix, dest_f)
 
 
-def store_score_matrices(index, binary_scores, weights=None):
+def store_score_matrices(index, binary_scores):
     if index < 0:
         dataset_path = "/dataset/duc/duc"
     else:
@@ -349,10 +349,6 @@ def store_score_matrices(index, binary_scores, weights=None):
     # Storing the matrices in the appropriate file, depending on the scoring system.
     doc_path = dataset_path + "_doc_matrix.dat"
     ref_path = dataset_path + "_ref_matrix.dat"
-    if binary_scores:
-        scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
-    else:
-        scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
 
     with open(os.getcwd() + ref_path, "rb") as dest_f:
         refs_3d_matrix = pickle.load(dest_f)
@@ -362,12 +358,22 @@ def store_score_matrices(index, binary_scores, weights=None):
     docs_no = docs_3d_matrix.shape[0]
     max_sent_no = docs_3d_matrix.shape[1]
 
-    scores_matrix = np.zeros((docs_no, max_sent_no))
-    for i in range(docs_no):
-        scores_matrix[i] = score_document(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :],
-                                          weights, binary=binary_scores)
-    with open(os.getcwd() + scores_path, "wb") as dest_f:
-        pickle.dump(scores_matrix, dest_f)
+    weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                    (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
+                    (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+
+    for weights in weights_list:
+        if binary_scores:
+            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+        else:
+            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+
+        scores_matrix = np.zeros((docs_no, max_sent_no))
+        for i in range(docs_no):
+            scores_matrix[i] = score_document(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :],
+                                              weights, binary=binary_scores)
+        with open(os.getcwd() + scores_path, "wb") as dest_f:
+            pickle.dump(scores_matrix, dest_f)
 
 
 # Getting the matrices of documents and reference summaries.
@@ -398,3 +404,31 @@ def get_matrices(weights, binary=False, index=-1):
         score_matrix = pickle.load(scores_f)
 
     return doc_matrix, ref_matrix, score_matrix
+
+
+def store_score_matrices_2(index):
+    if index < 0:
+        dataset_path = "/dataset/duc/duc"
+    else:
+        dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
+
+    # Storing the matrices in the appropriate file, depending on the scoring system.
+    doc_path = dataset_path + "_doc_matrix.dat"
+    ref_path = dataset_path + "_ref_matrix.dat"
+
+    with open(os.getcwd() + ref_path, "rb") as dest_f:
+        refs_3d_matrix = pickle.load(dest_f)
+    with open(os.getcwd() + doc_path, "rb") as dest_f:
+        docs_3d_matrix = pickle.load(dest_f)
+
+    docs_no = docs_3d_matrix.shape[0]
+    max_sent_no = docs_3d_matrix.shape[1]
+
+    scores_path = dataset_path + "_score_matrix_TEST.dat"
+
+    scores_matrix = np.zeros((docs_no, max_sent_no))
+    for i in range(docs_no):
+        scores_matrix[i] = score_document_2(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :])
+    with open(os.getcwd() + scores_path, "wb") as dest_f:
+        pickle.dump(scores_matrix, dest_f)
+
