@@ -198,7 +198,7 @@ def sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_l
     labels = ["FIRST", "BEST", "WORST", "AVERAGE"]
 
     for i in range(10):
-        indices.append(random.randint(1, len(docs) - 1))
+        indices.append(random.randint(1, len(recall_score_list) - 1))
         labels.append("RANDOM")
 
     with open(os.getcwd() + "/results/sample_summaries/" +
