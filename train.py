@@ -39,7 +39,7 @@ def train(series_name, seq_at_end, dense_layers, batch_size, epochs, binary, dat
             model_name = series_name + "_" + str(batch_size) + "_" + str(epochs) + "_" + str(weights)
         save_model = False
 
-        model = build_model(doc_size, vector_size, True, 0)
+        model = build_model(doc_size, vector_size, seq_at_end, dense_layers)
         for index in range(duc_index, batches):
         #for index in indices:
             doc_matrix, _, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
