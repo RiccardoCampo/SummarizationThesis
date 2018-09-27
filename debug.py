@@ -140,16 +140,17 @@ for weights in weights_list:
 duc_dataset = False
 ds_threshold = 0.15
 
-weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
-                (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
-                (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+weights_list = [#(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
+                #(0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
+                #(0.8, 0.2), (0.9, 0.1),
+                (1.0, 0.0)]
 
 if duc_dataset:
     batches = 0
     duc_index = -1
 else:
     batches = 35
-    duc_index = 0
+    duc_index = 34
 
 for weights in weights_list:
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
@@ -157,12 +158,14 @@ for weights in weights_list:
 
     docs_no = 0
     for k in range(duc_index, batches):
-        doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=True, index=k)#, alt_binary=True)
+        doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=True, index=k, alt_binary=True)
         docs_pas_lists, refs_pas_lists = get_pas_lists(index=k)
         refs = get_sources_from_pas_lists(refs_pas_lists)
         # _, refs, _ = get_duc(_duc_path_)       DUC
 
         training_no = 832       # includes validation.
+        if k == 34:
+            training_no = 685
 
         docs_pas_lists = docs_pas_lists[training_no:]
         doc_matrix = doc_matrix[training_no:, :, :]
@@ -198,7 +201,8 @@ for weights in weights_list:
                 rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
                 rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
 
-        sample_summaries("maximum_scores_NEW SCORES" + str(weights),
+
+        sample_summaries("maximum_scores_BINARY" + str(weights),
                          docs_pas_lists,
                          refs,
                          summaries,
@@ -209,7 +213,7 @@ for weights in weights_list:
         rouge_scores[k] /= docs_no
 
     with open(os.getcwd() + "/results/results.txt", "a") as res_file:
-        print("maximum score NEW SCORES" + str(weights), file=res_file)
+        print("maximum score BINARY" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
 #"""

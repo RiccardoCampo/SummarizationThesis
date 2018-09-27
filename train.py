@@ -10,6 +10,8 @@ def train(series_name, seq_at_end, dense_layers, batch_size, epochs, binary, dat
         weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                         (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                         (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
+
+    last_index_size = 685
     if dataset == "nyt":
         batches = 35
         train_size = 666
@@ -42,6 +44,9 @@ def train(series_name, seq_at_end, dense_layers, batch_size, epochs, binary, dat
         model = build_model(doc_size, vector_size, seq_at_end, dense_layers)
         for index in range(duc_index, batches):
         #for index in indices:
+            if index == 34:
+                training_no = last_index_size
+
             doc_matrix, _, score_matrix = get_matrices(weights=weights, binary=binary, index=index)
             doc_matrix = doc_matrix[:training_no, :, :]
             score_matrix = score_matrix[:training_no, :]

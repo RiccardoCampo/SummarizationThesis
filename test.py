@@ -15,6 +15,7 @@ def test(series_name, dataset, weights=None):
                         (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                         (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
 
+    last_index_size = 685
     if dataset == "nyt":
         batches = 35
         duc_index = 0
@@ -30,6 +31,8 @@ def test(series_name, dataset, weights=None):
                         "rouge_2_precision": 0, "rouge_2_f_score": 0}
         recall_list = []
         for index in range(duc_index, batches):
+            if index == 34:
+                training_no = last_index_size
             doc_matrix, _, _ = get_matrices(weights=weights, binary=False, index=index)
             docs_pas_lists, refs_pas_lists = get_pas_lists(index)
             refs = get_sources_from_pas_lists(refs_pas_lists)
