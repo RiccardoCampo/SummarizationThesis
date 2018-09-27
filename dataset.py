@@ -377,7 +377,7 @@ def store_score_matrices(index, binary_scores):
 
 
 # Getting the matrices of documents and reference summaries.
-def get_matrices(weights, binary=False, index=-1):
+def get_matrices(weights, binary=False, index=-1, alt_binary=False):
     # Selecting the right path depending on the batch or binary scoring.
     if index < 0:
         dataset_path = "/dataset/duc/duc"
@@ -385,7 +385,8 @@ def get_matrices(weights, binary=False, index=-1):
         ref_path = dataset_path + "_ref_matrix.dat"
         if binary:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
-            #scores_path = dataset_path + "_score_matrix_TEST.dat"
+            if alt_binary:
+                scores_path = dataset_path + "_score_matrix_TEST.dat"
         else:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
     else:
