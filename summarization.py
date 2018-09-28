@@ -118,7 +118,7 @@ def build_model(doc_size, vector_size, seq_at_the_end, dense_layers):
         output = Lambda(crop)([output, inputs])
 
     model = Model(inputs=inputs, outputs=output)
-    model.compile('adam', 'mse', metrics=['accuracy'])
+    model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
 
     print(model.summary())
 
