@@ -385,8 +385,6 @@ def get_matrices(weights, binary=False, index=-1, alt_binary=False):
         ref_path = dataset_path + "_ref_matrix.dat"
         if binary:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
-            if alt_binary:
-                scores_path = dataset_path + "_score_matrix_TEST.dat"
         else:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
     else:
@@ -395,6 +393,8 @@ def get_matrices(weights, binary=False, index=-1, alt_binary=False):
         ref_path = dataset_path + "_ref_matrix.dat"
         if binary:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+            if alt_binary:
+                scores_path = dataset_path + "_score_matrix_TEST.dat"
         else:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
 
