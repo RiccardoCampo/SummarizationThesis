@@ -148,8 +148,6 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
                         callbacks=[tensorboard],
                         initial_epoch = initial_epoch)
 
-    if save_model:
-        model.save(os.getcwd() + "/models/" + model_name + ".h5")
 
     history_path = os.getcwd() + "/results/histories/" + model_name + ".hst"
     history = history.history
@@ -162,6 +160,10 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
 
     with open(history_path, "wb") as dest_file:
         pickle.dump(history, dest_file)
+
+    if save_model:
+        model.save(os.getcwd() + "/models/" + model_name + ".h5")
+        K.clear_session()
 
 
 # Crops the output(x[0]) based on the input(x[1]) padding.
