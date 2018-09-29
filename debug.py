@@ -158,7 +158,7 @@ for weights in weights_list:
 
     docs_no = 0
     for k in range(duc_index, batches):
-        doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=True, index=k, alt_binary=True)
+        doc_matrix, ref_matrix, score_matrix = get_matrices(weights=weights, binary=False, index=k)
         docs_pas_lists, refs_pas_lists = get_pas_lists(index=k)
         refs = get_sources_from_pas_lists(refs_pas_lists)
         # _, refs, _ = get_duc(_duc_path_)       DUC
