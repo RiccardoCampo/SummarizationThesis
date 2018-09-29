@@ -109,15 +109,17 @@ def build_model(doc_size, vector_size, loss_function, seq_at_the_end, dense_laye
     else:
         blstm = Bidirectional(LSTM(1, return_sequences=True), merge_mode="ave")(mask)
         blstm = Lambda(lambda x: K.squeeze(x, -1))(blstm)
-    blstm = Activation("relu")(blstm)
 
     if dense_layers > 0:
-        dense = Dense(doc_size)(blstm)
+        blstm_act = Activation("relu")(blstm)
+        dense = Dense(doc_size)(blstm_act)
         for i in range(1, dense_layers):
             dense_act = Activation("relu")(dense)
             dense = Dense(doc_size)(dense_act)
+        output = Activation(output_activation)(dense)
+    else:
+        output = Activation(output_activation)(blstm)
 
-    output = Activation(output_activation)(blstm)
     if seq_at_the_end:
         output = Lambda(crop)([output, inputs])
 
