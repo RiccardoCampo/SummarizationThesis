@@ -202,7 +202,6 @@ for weights in weights_list:
                 rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
                 rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
 
-
         sample_summaries("maximum_scores_NEW" + str(weights),
                          docs_pas_lists,
                          refs,

@@ -377,26 +377,25 @@ def store_score_matrices(index, binary_scores):
 
 
 # Getting the matrices of documents and reference summaries.
-def get_matrices(weights, binary=False, index=-1, alt_binary=False):
+def get_matrices(weights, scores, index=-1):
     # Selecting the right path depending on the batch or binary scoring.
     if index < 0:
         dataset_path = "/dataset/duc/duc"
-        doc_path = dataset_path + "_doc_matrix.dat"
-        ref_path = dataset_path + "_ref_matrix.dat"
-        if binary:
+        if scores == 1:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
         else:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
     else:
         dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
-        doc_path = dataset_path + "_doc_matrix.dat"
-        ref_path = dataset_path + "_ref_matrix.dat"
-        if binary:
+        if scores == 1:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
-            if alt_binary:
-                scores_path = dataset_path + "_score_matrix_TEST.dat"
+        elif scores == 2:
+            scores_path = dataset_path + "_score_matrix_TEST.dat"
         else:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+
+    doc_path = dataset_path + "_doc_matrix.dat"
+    ref_path = dataset_path + "_ref_matrix.dat"
 
     with open(os.getcwd() + doc_path, "rb") as docs_f:
         doc_matrix = pickle.load(docs_f)

@@ -100,7 +100,7 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
 
 
 # Initialize and compile a model for the specific dimensions.
-def build_model(doc_size, vector_size, seq_at_the_end, dense_layers):
+def build_model(doc_size, vector_size, loss_function, seq_at_the_end, dense_layers, output_activation):
     inputs = Input(shape=(doc_size, vector_size))
     mask = Masking(mask_value=0.0)(inputs)
 
@@ -109,16 +109,18 @@ def build_model(doc_size, vector_size, seq_at_the_end, dense_layers):
     else:
         blstm = Bidirectional(LSTM(1, return_sequences=True), merge_mode="ave")(mask)
         blstm = Lambda(lambda x: K.squeeze(x, -1))(blstm)
+    blstm = Activation("relu")(blstm)
 
     for i in range(dense_layers):
         blstm = Dense(doc_size)(blstm)
+        blstm = Activation("relu")(blstm)
 
-    output = Activation("relu")(blstm)
+    output = Activation(output_activation)(blstm)
     if seq_at_the_end:
         output = Lambda(crop)([output, inputs])
 
     model = Model(inputs=inputs, outputs=output)
-    model.compile('adam', 'mse', metrics=['accuracy'])
+    model.compile('adam', loss_function, metrics=['accuracy'])
 
     print(model.summary())
 
