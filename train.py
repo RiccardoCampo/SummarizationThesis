@@ -67,7 +67,7 @@ if __name__ == "__main__":
     ep = int(sys.argv[7])               # Epochs.
     sc = int(sys.argv[8])               # Scores: 0 non binary, 1 binary, 2 closest binary.
     dset = str(sys.argv[9])             # Dataset
-    if len(sys.argv) > 9:
+    if len(sys.argv) > 10:
         w1 = float(sys.argv[9])         # Weight 1.
         w2 = float(sys.argv[10])        # Weight 2
         train(name, ls, sq, dn, oa, bs, ep, sc, dset, (w1, w2))
