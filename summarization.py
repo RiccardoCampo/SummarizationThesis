@@ -111,9 +111,11 @@ def build_model(doc_size, vector_size, loss_function, seq_at_the_end, dense_laye
         blstm = Lambda(lambda x: K.squeeze(x, -1))(blstm)
     blstm = Activation("relu")(blstm)
 
-    for i in range(dense_layers):
-        blstm = Dense(doc_size)(blstm)
-        blstm = Activation("relu")(blstm)
+    if dense_layers > 0:
+        dense = Dense(doc_size)(blstm)
+        for i in range(1, dense_layers):
+            dense_act = Activation("relu")(dense)
+            dense = Dense(doc_size)(dense_act)
 
     output = Activation(output_activation)(blstm)
     if seq_at_the_end:
