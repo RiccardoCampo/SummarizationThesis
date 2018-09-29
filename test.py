@@ -33,7 +33,7 @@ def test(series_name, dataset, weights=None):
         for index in range(duc_index, batches):
             if index == 34:
                 training_no = last_index_size
-            doc_matrix, _, _ = get_matrices(weights=weights, binary=False, index=index)
+            doc_matrix, _, _ = get_matrices(weights, 0, index=index)
             docs_pas_lists, refs_pas_lists = get_pas_lists(index)
             refs = get_sources_from_pas_lists(refs_pas_lists)
 

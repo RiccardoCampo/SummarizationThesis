@@ -100,15 +100,12 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
 
 
 # Initialize and compile a model for the specific dimensions.
-def build_model(doc_size, vector_size, loss_function, seq_at_the_end, dense_layers, output_activation):
+def build_model(doc_size, vector_size, loss_function, dense_layers, output_activation):
     inputs = Input(shape=(doc_size, vector_size))
     mask = Masking(mask_value=0.0)(inputs)
 
-    if seq_at_the_end:
-        blstm = Bidirectional(LSTM(doc_size), merge_mode="ave")(mask)
-    else:
-        blstm = Bidirectional(LSTM(1, return_sequences=True), merge_mode="ave")(mask)
-        blstm = Lambda(lambda x: K.squeeze(x, -1))(blstm)
+    blstm = Bidirectional(LSTM(1, return_sequences=True), merge_mode="ave")(mask)
+    blstm = Lambda(lambda x: K.squeeze(x, -1))(blstm)
 
     if dense_layers > 0:
         blstm_act = Activation("relu")(blstm)
@@ -120,8 +117,7 @@ def build_model(doc_size, vector_size, loss_function, seq_at_the_end, dense_laye
     else:
         output = Activation(output_activation)(blstm)
 
-    if seq_at_the_end:
-        output = Lambda(crop)([output, inputs])
+    # output = Lambda(crop)([output, inputs])
 
     model = Model(inputs=inputs, outputs=output)
     model.compile('adam', loss_function, metrics=['accuracy'])

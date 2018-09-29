@@ -13,10 +13,39 @@ from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
 from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary, \
     score_document_2, predict_scores
+from train import train
 from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
+
+# """   MASS TRAINING
+
+losses = ["mse", "binary_crossentropy"]
+activations = ["tanh", "softmax"]
+scores = [1, 2]
+dense_layers = [3, 5]
+epochs = [1, 10]
+batch_sizes = [10, 20]
+name = 38
+
+for loss in losses:
+    for activation in activations:
+        for score in scores:
+            for dense_layer in dense_layers:
+                for epoch in epochs:
+                    for batch_size in batch_sizes:
+                        train(str(name), loss, dense_layer, activation, batch_size, epoch, score, "nyt", (0.3, 0.7))
+                        name += 1
+
+# """
+
+
+
+
+
+
+
 
 
 """ CHECKING DIRECT SPEECH
@@ -136,7 +165,7 @@ for weights in weights_list:
         print("=================================================", file=res_file)
 """
 
-#"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
+"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
 duc_dataset = False
 ds_threshold = 0.15
 
@@ -216,7 +245,7 @@ for weights in weights_list:
         print("maximum score NEW" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-#"""
+"""
 
 """        TESTING & TRAINING NYT
 tst = True
