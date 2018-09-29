@@ -47,7 +47,7 @@ def train(series_name, seq_at_end, dense_layers, batch_size, epochs, binary, dat
             if index == 34:
                 training_no = last_index_size
 
-            doc_matrix, _, score_matrix = get_matrices(weights=weights, binary=binary, index=index, alt_binary=True)
+            doc_matrix, _, score_matrix = get_matrices(weights=weights, binary=binary, index=index, alt_binary=False)
             doc_matrix = doc_matrix[:training_no, :, :]
             score_matrix = score_matrix[:training_no, :]
 
