@@ -21,13 +21,13 @@ _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
 # """   MASS TRAINING
 
-losses = ["mse", "binary_crossentropy"]
-activations = ["tanh", "softmax"]
+losses = ["mse"]
+activations = ["sigmoid", "tanh", "softmax"]
 scores = [1, 2]
-dense_layers = [3, 5]
-epochs = [1, 10]
-batch_sizes = [10, 20]
-name = 38
+dense_layers = [0, 10]
+epochs = [1, 20]
+batch_sizes = [20]
+name = 107
 
 for loss in losses:
     for activation in activations:
