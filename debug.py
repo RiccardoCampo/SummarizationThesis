@@ -22,18 +22,18 @@ _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 # """   MASS TRAINING
 
 losses = ["mse"]
-activations = ["sigmoid", "tanh", "softmax"]
-scores = [1, 2]
-dense_layers = [0, 10]
-epochs = [1, 20]
+activations = ["sigmoid", "tanh"]
+scores = [2]
+dense_layers = [5, 20, 40]
+epochs = [1, 5, 10]
 batch_sizes = [20]
-name = 107
+name = 131
 
 for loss in losses:
-    for activation in activations:
-        for score in scores:
-            for dense_layer in dense_layers:
-                for epoch in epochs:
+    for score in scores:
+        for epoch in epochs:
+            for activation in activations:
+                for dense_layer in dense_layers:
                     for batch_size in batch_sizes:
                         train(str(name), loss, dense_layer, activation, batch_size, epoch, score, "nyt", (0.3, 0.7))
                         name += 1
