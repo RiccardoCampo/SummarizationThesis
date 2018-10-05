@@ -23,7 +23,7 @@ def test(series_name, dataset, weights=None):
     else:
         batches = 0
         duc_index = -1
-        training_no = 422  # includes validation.
+        training_no = 0  # includes validation.
 
     for weights in weights_list:
         model_name = series_name + "_" + str(weights)
