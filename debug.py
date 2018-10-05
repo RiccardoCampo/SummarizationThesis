@@ -22,12 +22,12 @@ _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 # """   MASS TRAINING
 
 losses = ["mse"]
-activations = ["sigmoid", "tanh"]
+activations = ["sigmoid"]
 scores = [2]
-dense_layers = [5, 20, 40]
-epochs = [1, 5, 10]
+dense_layers = [15, 30, 60]
+epochs = [1, 5, 10, 20]
 batch_sizes = [20]
-name = 131
+name = 149
 
 for loss in losses:
     for score in scores:
