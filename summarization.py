@@ -101,6 +101,9 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
 
 # Initialize and compile a model for the specific dimensions.
 def build_model(doc_size, vector_size, loss_function, dense_layers, output_activation):
+    if loss_function == "matching_ones":
+        loss_function = matching_ones
+
     inputs = Input(shape=(doc_size, vector_size))
     mask = Masking(mask_value=0.0)(inputs)
 
@@ -120,7 +123,7 @@ def build_model(doc_size, vector_size, loss_function, dense_layers, output_activ
     # output = Lambda(crop)([output, inputs])
 
     model = Model(inputs=inputs, outputs=output)
-    model.compile('adam', loss_function, metrics=['accuracy'])
+    model.compile('adam', loss=loss_function, metrics=['accuracy'])
 
     print(model.summary())
 
@@ -149,7 +152,6 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
                         validation_data=[x_test, y_test],
                         callbacks=[tensorboard],
                         initial_epoch = initial_epoch)
-
 
     history_path = os.getcwd() + "/results/histories/" + model_name + ".hst"
     history = history.history
@@ -187,6 +189,14 @@ def crop(x):
 
     # Multiplying the output by the padding (thus putting to zero the padding documents).
     return dense * padding
+
+
+def matching_ones(y_true, y_pred):
+    matching_pred = K.dot(y_pred, K.transpose(y_true))
+    shape = (K.int_shape(y_pred)[1], 1)
+    true_ones = K.dot(y_true, K.ones(shape))
+
+    return 1 - matching_pred / true_ones
 
 
 # Returns the predicted scores given model name and documents.
@@ -308,7 +318,7 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False
     sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_list, batch=batch)
 
     for k in rouge_scores.keys():
-        rouge_scores[k] /= len(docs_pas_lists)
+        rouge_scores[k] /= len(summaries)
 
     return rouge_scores, recall_score_list
 

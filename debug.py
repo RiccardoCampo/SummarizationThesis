@@ -19,10 +19,10 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-# """   MASS TRAINING
+#"""   MASS TRAINING
 
 losses = ["mse"]
-activations = ["sigmoid"]
+activations = ["hard_sigmoid"]
 scores = [2]
 dense_layers = [15, 30, 60]
 epochs = [1, 5, 10, 20]
@@ -38,9 +38,35 @@ for loss in losses:
                         train(str(name), loss, dense_layer, activation, batch_size, epoch, score, "nyt", (0.3, 0.7))
                         name += 1
 
-# """
+#"""
 
 
+""" DUMMY MODEL
+model = build_model(4, 2, "matching_ones", 1, "sigmoid")
+
+doc_mat = np.array([
+                        [
+                            [1, 1], [3, 5], [2, 3], [6, 2]
+                        ],
+                        [
+                            [3, 3], [5, 1], [9, 3], [0, 0]
+                        ],
+                        [
+                            [0, 1], [3, 2], [1, 5], [0, 0]
+                        ]
+                    ])
+
+score_mat = np.array([[1, 1, 0, 1],
+                      [0, 1, 1, 0],
+                      [0, 0, 1, 0]])
+
+
+print(model.predict([[[[0, 1], [3, 2], [1, 5], [0, 0]]]]))
+
+train_model(model, "loss_test", doc_mat, score_mat, 0, 1, val_size=1)
+
+print(model.predict([[[[0, 1], [3, 2], [1, 5], [0, 0]]]]))
+"""
 
 
 
