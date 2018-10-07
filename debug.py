@@ -24,8 +24,8 @@ _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 losses = ["mse"]
 activations = ["hard_sigmoid"]
 scores = [2]
-dense_layers = [1, 5, 10]
-epochs = [1, 20, 30]
+dense_layers = [12, 14, 16, 18, 22, 24, 26, 28]
+epochs = [1]
 batch_sizes = [20]
 name = 174
 
