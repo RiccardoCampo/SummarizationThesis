@@ -27,7 +27,7 @@ scores = [2]
 dense_layers = [12, 14, 16, 18, 22, 24, 26, 28]
 epochs = [1]
 batch_sizes = [20]
-name = 174
+name = 201
 
 for loss in losses:
     for score in scores:
