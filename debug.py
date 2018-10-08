@@ -19,15 +19,16 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
+
 #"""   MASS TRAINING
 
-losses = ["mse"]
-activations = ["hard_sigmoid"]
+losses = ["binary_crossentropy"]
+activations = ["hard_sigmoid", "sigmoid", "softmax"]
 scores = [2]
-dense_layers = [11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29]
-epochs = [1]
-batch_sizes = [20]
-name = 201
+dense_layers = [1, 2, 3]
+epochs = [1, 2, 3]
+batch_sizes = [1, 5, 10]
+name = 219
 
 for loss in losses:
     for score in scores:
@@ -35,7 +36,7 @@ for loss in losses:
             for activation in activations:
                 for dense_layer in dense_layers:
                     for batch_size in batch_sizes:
-                        train(str(name), loss, dense_layer, activation, batch_size, epoch, score, "nyt", (0.3, 0.7))
+                        train(str(name), loss, dense_layer, activation, batch_size, epoch, score, "duc", (0.3, 0.7))
                         name += 1
 
 #"""

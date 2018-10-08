@@ -192,8 +192,16 @@ def crop(x):
 
 
 def matching_ones(y_true, y_pred):
-    matching_pred = K.dot(y_pred, K.transpose(y_true))
     shape = (K.int_shape(y_pred)[1], 1)
+    temp_pred = y_pred
+    bin_pred = K.zeros(shape)
+    for i in range(10):
+        max_score = K.max(temp_pred)
+        selected_one = K.cast(K.equal(y_pred, max_score), dtype=K.floatx())
+        bin_pred += selected_one
+        temp_pred -= selected_one
+
+    matching_pred = K.dot(bin_pred, K.transpose(y_true))
     true_ones = K.dot(y_true, K.ones(shape))
 
     return 1 - matching_pred / true_ones
@@ -353,6 +361,7 @@ def score_document_2(doc_vectors, ref_vectors):
     scores = np.zeros(max_len)
     doc_vectors = doc_vectors[~np.all(doc_vectors == 0, axis=1)]
     ref_vectors = ref_vectors[~np.all(ref_vectors == 0, axis=1)]
+    doc_len = len(doc_vectors)
     features_no = 6
     doc_emb_vectors = [doc_vector[features_no:] for doc_vector in doc_vectors]
     ref_emb_vectors = [ref_vector[features_no:] for ref_vector in ref_vectors]
@@ -360,7 +369,7 @@ def score_document_2(doc_vectors, ref_vectors):
     for ref_emb in ref_emb_vectors:
         distances = [np.linalg.norm(ref_emb - doc_emb) for doc_emb in doc_emb_vectors]
         min_index = distances.index(min(distances))
-        while scores[min_index] == 1:
+        while scores[min_index] == 1 and np.any(scores[:doc_len] != np.ones(doc_len)):
             distances[min_index] += 1000
             min_index = distances.index(min(distances))
         scores[min_index] = 1
