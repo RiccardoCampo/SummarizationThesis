@@ -38,7 +38,7 @@ def test(series_name, dataset, weights=None):
             refs = get_sources_from_pas_lists(refs_pas_lists)
 
             docs_pas_lists = docs_pas_lists[training_no:]
-            doc_matrix = doc_matrix[training_no:, :300, :]
+            doc_matrix = doc_matrix[training_no:, :, :]
             refs = refs[training_no:]
 
             score, recall_list_part = testing(model_name,
