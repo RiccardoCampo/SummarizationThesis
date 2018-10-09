@@ -7,7 +7,9 @@ from summarization import testing
 from utils import get_sources_from_pas_lists
 
 
+# Compute ROUGE score of the specified model using the specified dataset.
 def test(series_name, dataset, weights=None):
+    # If the weights are not specified all of them are used.
     if weights:
         weights_list = [weights]
     else:
@@ -15,21 +17,22 @@ def test(series_name, dataset, weights=None):
                         (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                         (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
 
+    # Indices varies based on the dataset.
     last_index_size = 685
     if dataset == "nyt":
         batches = 35
-        duc_index = 0
-        training_no = 666  # includes validation.
+        duc_index = 0       # Used to set the parameter "index" to -1 when using DUC, to get duc matrices and scores.
+        training_no = 666   # Includes validation.
     else:
         batches = 0
         duc_index = -1
-        training_no = 0 #422  # includes validation.
+        training_no = 0 # 422  # Includes validation.
 
     for weights in weights_list:
         model_name = series_name + "_" + str(weights)
         rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                         "rouge_2_precision": 0, "rouge_2_f_score": 0}
-        recall_list = []
+        recall_list = []                            # Storing the recall for each document.
         for index in range(duc_index, batches):
             if index == 34:
                 training_no = last_index_size
@@ -60,9 +63,9 @@ def test(series_name, dataset, weights=None):
         for k in rouge_scores.keys():
             rouge_scores[k] /= batches - duc_index  # if duc then /1 else /35
 
+        # Get validation accuracy histories.
         with open(os.getcwd() + "/results/histories/" + model_name + ".hst", "rb") as file:
             history = pickle.load(file)
-        # Get training and test loss histories
         val_acc = history['val_acc']
 
         with open(os.getcwd() + "/results/results.txt", "a") as res_file:

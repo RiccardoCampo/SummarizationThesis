@@ -3,7 +3,9 @@ from dataset import get_matrices
 from summarization import build_model, train_model
 
 
+# Train a model with the specified parameters.
 def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores, dataset, weights=None):
+    # If the weights are not specified all of them are used.
     if weights:
         weights_list = [weights]
     elif scores == 2:
@@ -13,13 +15,15 @@ def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores, 
                         (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                         (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
 
-    last_index_size = 685
+    last_index_size = 685       # Size of the last batch training portion.
+
+    # Indices varies based on the dataset.
     if dataset == "nyt":
         batches = 35
         train_size = 666
         val_size = 166
         doc_size = 300
-        duc_index = 0
+        duc_index = 0       # Used to set the parameter "index" to -1 when using DUC, to get duc matrices and scores.
     else:
         batches = 0
         train_size = 372
@@ -33,7 +37,7 @@ def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores, 
     for weights in weights_list:
         model_name = dataset + "_" + series_name + "_" + loss + "_dense" + str(dense_layers) + "_" + out_act + "_bs" + \
                      str(batch_size) + "_ep" + str(epochs) + "_scores" + str(scores) + "_" + str(weights)
-        save_model = False
+        save_model = False              # Saves the model only when the training process is complete (last batch).
 
         model = build_model(doc_size, vector_size, loss, dense_layers, out_act)
         for index in range(duc_index, batches):

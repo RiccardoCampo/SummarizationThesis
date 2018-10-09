@@ -101,15 +101,14 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
 
 # Initialize and compile a model for the specific dimensions.
 def build_model(doc_size, vector_size, loss_function, dense_layers, output_activation):
-    if loss_function == "matching_ones":
-        loss_function = matching_ones
-
     inputs = Input(shape=(doc_size, vector_size))
     mask = Masking(mask_value=0.0)(inputs)
 
     blstm = Bidirectional(LSTM(1, return_sequences=True), merge_mode="ave")(mask)
     blstm = Lambda(lambda x: K.squeeze(x, -1))(blstm)
 
+    # If more than one dense layer is present between each dense layer a "relu" is placed to propagate the gradient.
+    # If no dense layer is used the specified activation is directly applied.
     if dense_layers > 0:
         blstm_act = Activation("relu")(blstm)
         dense = Dense(doc_size)(blstm_act)
@@ -151,7 +150,7 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
                         epochs=epochs,
                         validation_data=[x_test, y_test],
                         callbacks=[tensorboard],
-                        initial_epoch = initial_epoch)
+                        initial_epoch=initial_epoch)
 
     history_path = os.getcwd() + "/results/histories/" + model_name + ".hst"
     history = history.history
@@ -189,22 +188,6 @@ def crop(x):
 
     # Multiplying the output by the padding (thus putting to zero the padding documents).
     return dense * padding
-
-
-def matching_ones(y_true, y_pred):
-    shape = (K.int_shape(y_pred)[1], 1)
-    temp_pred = y_pred
-    bin_pred = K.zeros(shape)
-    for i in range(10):
-        max_score = K.max(temp_pred)
-        selected_one = K.cast(K.equal(y_pred, max_score), dtype=K.floatx())
-        bin_pred += selected_one
-        temp_pred -= selected_one
-
-    matching_pred = K.dot(bin_pred, K.transpose(y_true))
-    true_ones = K.dot(y_true, K.ones(shape))
-
-    return 1 - matching_pred / true_ones
 
 
 # Returns the predicted scores given model name and documents.

@@ -3,11 +3,8 @@ import os
 import pickle
 import re
 import xml.etree.ElementTree
-from time import time
-
 import numpy as np
-from numpy.random.mtrand import permutation
-
+from time import time
 from pas import extract_pas
 from summarization import score_document, score_document_2
 from utils import stem_and_stopword, text_cleanup, tokens, timer
@@ -244,9 +241,11 @@ def arrange_nyt_pas_lists(dim=1000, max_len=300, max_file=660000):
         for i in range(0, max_file, 10000):
             # Loading documents until the end is reached.
             if docs_no < end:
-                with open(os.getcwd() + "/dataset/nyt/raw/nyt_docs" + str(i) + "-" + str(i + 10000) + "_pas.dat", "rb") as docs_f:
+                with open(os.getcwd() + "/dataset/nyt/raw/nyt_docs" + str(i) + "-" + str(i + 10000) + "_pas.dat",
+                          "rb") as docs_f:
                     temp_docs = pickle.load(docs_f)
-                with open(os.getcwd() + "/dataset/nyt/raw/nyt_refs" + str(i) + "-" + str(i + 10000) + "_pas.dat", "rb") as refs_f:
+                with open(os.getcwd() + "/dataset/nyt/raw/nyt_refs" + str(i) + "-" + str(i + 10000) + "_pas.dat",
+                          "rb") as refs_f:
                     temp_refs = pickle.load(refs_f)
                 temp_docs_len = len(temp_docs)
                 # Clear the documents with exceeding length and respective summaries.
@@ -340,13 +339,14 @@ def store_matrices(index):
         pickle.dump(docs_3d_matrix, dest_f)
 
 
+# Scores are computed and stored.
 def store_score_matrices(index, binary_scores):
     if index < 0:
         dataset_path = "/dataset/duc/duc"
     else:
         dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
 
-    # Storing the matrices in the appropriate file, depending on the scoring system.
+    # Storing the scores in the appropriate file, depending on the scoring system.
     doc_path = dataset_path + "_doc_matrix.dat"
     ref_path = dataset_path + "_ref_matrix.dat"
 
@@ -368,6 +368,7 @@ def store_score_matrices(index, binary_scores):
         else:
             scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
 
+        # Build the score matrix document by document.
         scores_matrix = np.zeros((docs_no, max_sent_no))
         for i in range(docs_no):
             scores_matrix[i] = score_document(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :],
@@ -407,6 +408,7 @@ def get_matrices(weights, scores, index=-1):
     return doc_matrix, ref_matrix, score_matrix
 
 
+# Second binary scoring method.
 def store_score_matrices_2(index):
     if index < 0:
         dataset_path = "/dataset/duc/duc"
@@ -432,4 +434,3 @@ def store_score_matrices_2(index):
         scores_matrix[i] = score_document_2(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :])
     with open(os.getcwd() + scores_path, "wb") as dest_f:
         pickle.dump(scores_matrix, dest_f)
-
