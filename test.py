@@ -26,7 +26,7 @@ def test(series_name, dataset, weights=None):
     else:
         batches = 0
         duc_index = -1
-        training_no = 422  # Includes validation.
+        training_no = 0 # 422  # Includes validation.
 
     for weights in weights_list:
         model_name = series_name + "_" + str(weights)
@@ -48,9 +48,9 @@ def test(series_name, dataset, weights=None):
                                               docs_pas_lists,
                                               doc_matrix,
                                               refs,
-                                              #dynamic_summ_len=True,
+                                              dynamic_summ_len=True,
                                               batch=index,
-                                              #rem_ds=True
+                                              rem_ds=True
                                               )
 
             rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
