@@ -62,13 +62,13 @@ def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores, 
 if __name__ == "__main__":
     name = str(sys.argv[1])             # Model name.
     ls = str(sys.argv[2])               # Loss function.
-    dn = int(sys.argv[4])               # Number of dense layers.
-    oa = str(sys.argv[5])               # Output activation.
-    bs = int(sys.argv[6])               # Batch size.
-    ep = int(sys.argv[7])               # Epochs.
-    sc = int(sys.argv[8])               # Scores: 0 non binary, 1 binary, 2 closest binary.
-    dset = str(sys.argv[9])             # Dataset
-    if len(sys.argv) > 10:
+    dn = int(sys.argv[3])               # Number of dense layers.
+    oa = str(sys.argv[4])               # Output activation.
+    bs = int(sys.argv[5])               # Batch size.
+    ep = int(sys.argv[6])               # Epochs.
+    sc = int(sys.argv[7])               # Scores: 0 non binary, 1 binary, 2 closest binary.
+    dset = str(sys.argv[8])             # Dataset
+    if len(sys.argv) > 9:
         w1 = float(sys.argv[9])         # Weight 1.
         w2 = float(sys.argv[10])        # Weight 2
         train(name, ls, dn, oa, bs, ep, sc, dset, (w1, w2))
