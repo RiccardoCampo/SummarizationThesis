@@ -48,9 +48,9 @@ def test(series_name, dataset, weights=None):
                                               docs_pas_lists,
                                               doc_matrix,
                                               refs,
-                                              #dynamic_summ_len=True,
+                                              dynamic_summ_len=True,
                                               batch=index,
-                                              #rem_ds=True
+                                              rem_ds=True
                                               )
 
             rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
