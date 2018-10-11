@@ -280,6 +280,10 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False
 
     pred_scores = predict_scores(model_name, doc_matrix)
     summaries = []
+    # Store the docs and refs which are not discarded,
+    # they are needed to match the order of the summaries while using sample_summaries().
+    selected_docs = []
+    selected_refs = []
 
     # Computing the score for each document than compute the average.
     for i in range(len(docs_pas_lists)):
@@ -295,6 +299,8 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False
             else:
                 summary = generate_summary(docs_pas_lists[i], scores, summ_len=100)
             summaries.append(summary)
+            selected_docs.append(docs_pas_lists[i])
+            selected_refs.append(refs[i])
 
             # Get the rouge scores.
             score = rouge_score([summary], [refs[i]])
@@ -306,7 +312,7 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
             recall_score_list.append(score["rouge_1_recall"])
 
-    sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_list, batch=batch)
+    sample_summaries(model_name, selected_docs, selected_refs, summaries, recall_score_list, batch=batch)
 
     for k in rouge_scores.keys():
         rouge_scores[k] /= len(summaries)
