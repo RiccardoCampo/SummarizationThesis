@@ -23,7 +23,7 @@ def test(series_name, dataset, weights=None):
     if dataset == "nyt":
         batches = 35
         duc_index = 0       # Used to set the parameter "index" to -1 when using DUC, to get duc matrices and scores.
-        training_no = 666   # Includes validation.
+        training_no = 832   # Includes validation.
     else:
         batches = 0
         duc_index = -1
@@ -46,7 +46,7 @@ def test(series_name, dataset, weights=None):
             doc_matrix = doc_matrix[training_no:, :, :]
             refs = refs[training_no:]
 
-            extended_doc_matrix = np.zeros(doc_matrix.shape[0], 385, doc_matrix.shape[2])
+            extended_doc_matrix = np.zeros((doc_matrix.shape[0], 385, doc_matrix.shape[2]))
             extended_doc_matrix[:doc_matrix.shape[0], :doc_matrix.shape[1], :doc_matrix.shape[2]] = doc_matrix
             doc_matrix = extended_doc_matrix
 
