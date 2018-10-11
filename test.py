@@ -1,6 +1,7 @@
 import os
 import pickle
 import sys
+import numpy as np
 
 from dataset import get_matrices, get_pas_lists
 from summarization import testing
@@ -44,6 +45,10 @@ def test(series_name, dataset, weights=None):
             #doc_matrix = doc_matrix[training_no:, :300, :]
             doc_matrix = doc_matrix[training_no:, :, :]
             refs = refs[training_no:]
+
+            extended_doc_matrix = np.zeros(doc_matrix.shape[0], 385, doc_matrix.shape[2])
+            extended_doc_matrix[:doc_matrix.shape[0], :doc_matrix.shape[1], :doc_matrix.shape[2]] = doc_matrix
+            doc_matrix = extended_doc_matrix
 
             score, recall_list_part = testing(model_name,
                                               docs_pas_lists,
