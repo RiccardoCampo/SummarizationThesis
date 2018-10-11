@@ -20,7 +20,7 @@ _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
 
-#"""   MASS TRAINING
+"""   MASS TRAINING
 
 dataset = "duc"
 losses = ["mse"]
@@ -40,8 +40,7 @@ for loss in losses:
                         train(str(name), loss, dense_layer, activation, batch_size, epoch, score, dataset, (0.3, 0.7))
                         name += 1
 
-#"""
-
+"""
 
 """ DUMMY MODEL
 model = build_model(4, 2, "matching_ones", 1, "sigmoid")

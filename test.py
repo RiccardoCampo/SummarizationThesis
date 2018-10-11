@@ -70,7 +70,8 @@ def test(series_name, dataset, weights=None):
         val_acc = history['val_acc']
 
         with open(os.getcwd() + "/results/results.txt", "a") as res_file:
-            print(model_name + "   val_acc: " + str(val_acc[-1]), file=res_file)
+            print(model_name + "   val_acc: " + str(val_acc[-1]) +
+                  "   tested on: " + dataset + " with #  of docs: " + len(recall_list), file=res_file)
             print(rouge_scores, file=res_file)
             print("=================================================", file=res_file)
 
