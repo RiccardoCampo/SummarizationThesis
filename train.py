@@ -8,8 +8,6 @@ def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores, 
     # If the weights are not specified all of them are used.
     if weights:
         weights_list = [weights]
-    elif scores == 2:
-        weights_list = [(0.0, 0.0)]
     else:
         weights_list = [(0.0, 1.0), (0.1, 0.9), (0.2, 0.8), (0.3, 0.7),
                         (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
