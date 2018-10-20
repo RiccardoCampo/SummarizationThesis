@@ -40,7 +40,7 @@ def test(series_name, dataset, weights=None):
             doc_matrix, _, _ = get_matrices(weights, 0, index=index)
             #docs_pas_lists, refs_pas_lists = get_pas_lists(index)
             #refs = get_sources_from_pas_lists(refs_pas_lists)
-            docs, refs = get_duc()
+            docs, refs, _ = get_duc()
 
             #docs_pas_lists = docs_pas_lists[training_no:]
             docs = docs[training_no:]
