@@ -15,13 +15,17 @@ from dataset import get_matrices, get_duc, get_nyt, \
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas, annotator
 from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary, \
-    predict_scores
+    predict_scores, generate_extract_summary
 from train import train
-from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio, timer
+from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio, timer, tokens
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
+docs, refs, _ = get_duc()
+_, _, scores = get_matrices((0.0, 1.0), 0)
+
+print(generate_extract_summary(tokens(docs[0]), scores[0]))
 
 
 

@@ -15,7 +15,7 @@ from keras.layers import Dense, LSTM, Bidirectional, Masking, Lambda, Activation
 
 
 # Return the best PASs of the source text given the source text, the max number of PASs and the weights.
-from utils import sample_summaries, direct_speech_ratio, get_sources_from_pas_lists
+from utils import sample_summaries, direct_speech_ratio, get_sources_from_pas_lists, tokens, text_cleanup
 
 
 def best_pas(pas_list, max_pas, weights):
@@ -295,7 +295,9 @@ def generate_summary(pas_list, scores, summ_len=100):
 
 # Generate the summary give the Model and the source text in the form of pas list.
 def generate_extract_summary(sentences, scores, summ_len=100):
-    pas_no = len(sentences)
+    sents_no = len(sentences)
+
+    scores = scores[:sents_no]
     sorted_scores = [(j, scores[j]) for j in range(len(scores))]
     sorted_scores.sort(key=lambda tup: -tup[1])
 
@@ -306,10 +308,11 @@ def generate_extract_summary(sentences, scores, summ_len=100):
 
     size = 0
     j = 0
-    while size < summ_len and j < pas_no:
-        if size + len(sorted_sents[j][1].split()) < summ_len:
-            best_sents.append(sorted_sents[j][1])
-        size += len(sorted_sents[j][1].split())
+    while size < summ_len and j < sents_no:
+        if len(sorted_sents[j][1]) > 3:
+            if size + len(sorted_sents[j][1].split()) < summ_len:
+                best_sents.append(sorted_sents[j][1])
+            size += len(sorted_sents[j][1].split())
         j += 1
 
     summary = ""
@@ -385,15 +388,17 @@ def testing_extract(model_name, docs, doc_matrix, refs, dynamic_summ_len=False, 
     for i in range(len(docs)):
         if direct_speech_ratio(docs[i]) < 0.15 or not rem_ds:
             print("Processing doc:" + str(i) + "/" + str(len(docs)))
-            sents_no = len(docs[i])
-
+            docs[i] = text_cleanup(docs[i])
+            refs[i] = text_cleanup(refs[i])
+            sentences = tokens(docs[i])
+            sents_no = len(sentences)
             # Cutting the scores to the length of the document and arrange them by score
             # preserving the original position.
             scores = pred_scores[i][:sents_no]
             if dynamic_summ_len:
-                summary = generate_extract_summary(docs[i], scores, summ_len=len(refs[i].split()))
+                summary = generate_extract_summary(sentences, scores, summ_len=len(refs[i].split()))
             else:
-                summary = generate_extract_summary(docs[i], scores, summ_len=100)
+                summary = generate_extract_summary(sentences, scores, summ_len=100)
             summaries.append(summary)
             selected_docs.append(docs[i])
             selected_refs.append(refs[i])
