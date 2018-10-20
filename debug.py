@@ -25,6 +25,11 @@ _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
 store_bestn_score_matrices(-1)
 
+docs, refs, _ = get_duc()
+
+print(len(docs))
+print(len(refs))
+
 
 
 
