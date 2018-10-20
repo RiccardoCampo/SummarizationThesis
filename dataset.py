@@ -53,8 +53,8 @@ def get_duc():
     summaries = []
     doc_names = []
     # Each directory contains more than one document.
-    for dir_name in os.listdir(duc_path + "/docs"):
-        for doc_name in os.listdir(duc_path + "/docs/" + dir_name):
+    for dir_name in sorted(os.listdir(duc_path + "/docs")):
+        for doc_name in sorted(os.listdir(duc_path + "/docs/" + dir_name)):
             doc_names.append(doc_name)
             # Docs from this newspaper are not a well-formed XML file, need to put apices in attributes "P".
             if doc_name.startswith("FBIS"):

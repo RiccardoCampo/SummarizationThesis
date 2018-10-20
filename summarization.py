@@ -387,10 +387,6 @@ def testing_extract(model_name, docs, doc_matrix, refs, dynamic_summ_len=False, 
             print("Processing doc:" + str(i) + "/" + str(len(docs)))
             sents_no = len(docs[i])
 
-            print(len(docs))
-            print(len(refs))
-            print(i)
-            
             # Cutting the scores to the length of the document and arrange them by score
             # preserving the original position.
             scores = pred_scores[i][:sents_no]
