@@ -445,12 +445,6 @@ def store_full_sentence_matrices():
         doc = text_cleanup(doc)
         # Splitting sentences (by dot).
         sentences = tokens(doc)
-        pas_list = extract_pas(sentences, "duc")
-        docs_pas_lists.append(pas_list)
-
-    # The list of pas lists is then stored.
-    with open(os.getcwd() + "/dataset/duc/duc_docs_pas.dat", "wb") as dest_f:
-        pickle.dump(docs_pas_lists, dest_f)
 
     # Same for reference summaries...
     for ref in references:
@@ -458,8 +452,37 @@ def store_full_sentence_matrices():
         ref = text_cleanup(ref)
         # Splitting sentences (by dot).
         sentences = tokens(ref)
-        pas_list = extract_pas(sentences, "duc", keep_all=True)
-        refs_pas_lists.append(pas_list)
 
-    with open(os.getcwd() + "/dataset/duc/duc_refs_pas.dat", "wb") as dest_f:
-        pickle.dump(refs_pas_lists, dest_f)
+
+    if index < 0:
+        docs_pas_lists, refs_pas_lists = get_pas_lists(-1)
+        dataset_path = "/dataset/duc/duc"
+    else:
+        docs_pas_lists, refs_pas_lists = get_pas_lists(index)
+        dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
+
+    # Storing the matrices in the appropriate file, depending on the scoring system.
+    doc_path = dataset_path + "_doc_matrix.dat"
+    ref_path = dataset_path + "_ref_matrix.dat"
+
+    docs_no = len(docs_pas_lists)                                   # First dimension, documents number.
+    # Second dimension, max document length (sparse), fixed in case of nyt.
+    max_sent_no = max([len(doc) for doc in docs_pas_lists]) if index < 0 else 300
+    # Third dimension, vector representation dimension.
+    sent_vec_len = len(docs_pas_lists[0][0].vector) + len(docs_pas_lists[0][0].embeddings)
+
+    # The matrix are initialized as zeros, then they'll filled in with vectors for each docs' sentence.
+    refs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
+    docs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
+
+    for i in range(docs_no):
+        for j in range(max_sent_no):
+            if j < len(docs_pas_lists[i]):
+                docs_3d_matrix[i, j, :] = np.append(docs_pas_lists[i][j].vector, docs_pas_lists[i][j].embeddings)
+            if j < len(refs_pas_lists[i]):
+                refs_3d_matrix[i, j, :] = np.append(refs_pas_lists[i][j].vector, refs_pas_lists[i][j].embeddings)
+
+    with open(os.getcwd() + ref_path, "wb") as dest_f:
+        pickle.dump(refs_3d_matrix, dest_f)
+    with open(os.getcwd() + doc_path, "wb") as dest_f:
+        pickle.dump(docs_3d_matrix, dest_f)
