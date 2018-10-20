@@ -183,11 +183,12 @@ def extract_pas(sentences, dataset_name, keep_all=False):
             # Substituting single apices with double apices to avoid errors with SRL.
             sent = re.sub("\'([a-zA-Z0-9])([a-zA-Z0-9 ]+)([a-zA-Z0-9])\'", r'" \1\2\3 "', sent)
             print(sent)
-            # Getting SRL annotations from SENNA.
-            sent_srl = annotator.get_annoations(sent.split())['srl']
 
+            annotations = annotator.get_annoations(remove_punct(sent).split())
+            # Getting SRL annotations from SENNA.
+            sent_srl = annotations['srl']
             # Getting POS tags from SENNA.
-            parts_of_speech = annotator.get_annoations(remove_punct(sent).split())['pos']
+            parts_of_speech = annotations['pos']
 
             for raw_pas in sent_srl:
                 accept_pas = 1

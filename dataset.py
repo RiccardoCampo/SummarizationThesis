@@ -47,7 +47,8 @@ def compute_idfs(doc_list, dest_path):
 
 
 # Getting documents and respective summaries from DUC dataset from XML files.
-def get_duc(duc_path):
+def get_duc():
+    duc_path = os.getcwd() + "/dataset/duc_source"
     docs = []
     summaries = []
     doc_names = []
@@ -114,11 +115,11 @@ def get_duc(duc_path):
 
 
 # Load all the DUC documents and summaries, process them and store them.
-def store_pas_duc_dataset(duc_path):
+def store_pas_duc_dataset():
     docs_pas_lists = []
     refs_pas_lists = []
 
-    docs, references, names = get_duc(duc_path)
+    docs, references, _ = get_duc()
     # For each document the pas_list is extracted after cleaning the text and tokenizing it.
     for doc in docs:
         print("Processing doc " + str(docs.index(doc)) + "/" + str(len(docs)))
@@ -382,18 +383,15 @@ def get_matrices(weights, scores, index=-1):
     # Selecting the right path depending on the batch or binary scoring.
     if index < 0:
         dataset_path = "/dataset/duc/duc"
-        if scores == 1:
-            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
-        else:
-            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
     else:
         dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
-        if scores == 1:
-            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
-        elif scores == 2:
-            scores_path = dataset_path + "_score_matrix_TEST.dat"
-        else:
-            scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+
+    if scores == 1:
+        scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+    elif scores == 2:
+        scores_path = dataset_path + "_score_matrix_TEST.dat"
+    else:
+        scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
 
     doc_path = dataset_path + "_doc_matrix.dat"
     ref_path = dataset_path + "_ref_matrix.dat"
@@ -434,3 +432,34 @@ def store_score_matrices_2(index):
         scores_matrix[i] = score_document_2(docs_3d_matrix[i, :, :], refs_3d_matrix[i, :, :])
     with open(os.getcwd() + scores_path, "wb") as dest_f:
         pickle.dump(scores_matrix, dest_f)
+
+
+def store_full_sentence_matrices():
+    docs_pas_lists = []
+    refs_pas_lists = []
+
+    docs, references, _ = get_duc()
+    # For each document the pas_list is extracted after cleaning the text and tokenizing it.
+    for doc in docs:
+        print("Processing doc " + str(docs.index(doc)) + "/" + str(len(docs)))
+        doc = text_cleanup(doc)
+        # Splitting sentences (by dot).
+        sentences = tokens(doc)
+        pas_list = extract_pas(sentences, "duc")
+        docs_pas_lists.append(pas_list)
+
+    # The list of pas lists is then stored.
+    with open(os.getcwd() + "/dataset/duc/duc_docs_pas.dat", "wb") as dest_f:
+        pickle.dump(docs_pas_lists, dest_f)
+
+    # Same for reference summaries...
+    for ref in references:
+        print("Processing doc " + str(references.index(ref)) + "/" + str(len(references)))
+        ref = text_cleanup(ref)
+        # Splitting sentences (by dot).
+        sentences = tokens(ref)
+        pas_list = extract_pas(sentences, "duc", keep_all=True)
+        refs_pas_lists.append(pas_list)
+
+    with open(os.getcwd() + "/dataset/duc/duc_refs_pas.dat", "wb") as dest_f:
+        pickle.dump(refs_pas_lists, dest_f)

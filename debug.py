@@ -1,6 +1,8 @@
 import os
 import pickle
 import re
+import time
+
 import tensorflow_hub as hub
 import tensorflow as tf
 import numpy as np
@@ -10,14 +12,26 @@ import keras
 from dataset import get_matrices, get_duc, get_nyt, \
     store_pas_nyt_dataset, compute_idfs, store_matrices, get_pas_lists, arrange_nyt_pas_lists, store_score_matrices_2
 from loss_testing import summary_clustering_score, summary_clustering_score_2
-from pas import realize_pas
+from pas import realize_pas, annotator
 from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary, \
     score_document_2, predict_scores
 from train import train
-from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio
+from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio, timer
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
+
+sent = "Vice President Dan Quayle presided over the Senate during the roll call , underscoring Bush 's commitment to the nominee Vice President Dan Quayle presided over the Senate during the roll call , underscoring Bush 's commitment to the nominee ."
+
+annotations = annotator.get_annoations(sent.split())
+
+
+print(annotations['chunk'])
+print(annotations['syntax_tree'].replace("(", "(\n"))
+
+
+
+
 
 
 """   MASS TRAINING
