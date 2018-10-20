@@ -15,7 +15,7 @@ from keras.layers import Dense, LSTM, Bidirectional, Masking, Lambda, Activation
 
 
 # Return the best PASs of the source text given the source text, the max number of PASs and the weights.
-from utils import sample_summaries, direct_speech_ratio
+from utils import sample_summaries, direct_speech_ratio, get_sources_from_pas_lists
 
 
 def best_pas(pas_list, max_pas, weights):
@@ -96,6 +96,27 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
         for i in range(max(int(len(doc_vectors) / 3), len(ref_vectors))):
             scores[sorted_indexes[i][0]] = 1
 
+    return scores
+
+
+# Assign scores to each pas in the document
+def score_document_bestn(doc_vectors, ref_vectors):
+    max_len = len(doc_vectors)
+    scores = np.zeros(max_len)
+    doc_vectors = doc_vectors[~np.all(doc_vectors == 0, axis=1)]
+    ref_vectors = ref_vectors[~np.all(ref_vectors == 0, axis=1)]
+    doc_len = len(doc_vectors)
+    features_no = 6
+    doc_emb_vectors = [doc_vector[features_no:] for doc_vector in doc_vectors]
+    ref_emb_vectors = [ref_vector[features_no:] for ref_vector in ref_vectors]
+
+    for ref_emb in ref_emb_vectors:
+        distances = [np.linalg.norm(ref_emb - doc_emb) for doc_emb in doc_emb_vectors]
+        min_index = distances.index(min(distances))
+        while scores[min_index] == 1 and np.any(scores[:doc_len] != np.ones(doc_len)):
+            distances[min_index] += 1000
+            min_index = distances.index(min(distances))
+        scores[min_index] = 1
     return scores
 
 
@@ -272,6 +293,31 @@ def generate_summary(pas_list, scores, summ_len=100):
     return summary
 
 
+# Generate the summary give the Model and the source text in the form of pas list.
+def generate_extract_summary(sentences, scores, summ_len=100):
+    pas_no = len(sentences)
+    sorted_scores = [(j, scores[j]) for j in range(len(scores))]
+    sorted_scores.sort(key=lambda tup: -tup[1])
+
+    # Get the indices of the sorted pas, then a list of the sorted realized pas.
+    sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
+    sorted_sents = [(index, sentences[index]) for index in sorted_indices]
+    best_sents = []
+
+    size = 0
+    j = 0
+    while size < summ_len and j < pas_no:
+        if size + sorted_sents[j][1].split() < summ_len:
+            best_sents.append(sorted_sents[j][1])
+        size += len(sorted_sents[j][1].split())
+
+    summary = ""
+    for sent in best_sents:
+        summary += sent + ".\n"
+
+    return summary
+
+
 # Compute rouge scores given a model.
 def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False, batch=0, rem_ds=False):
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
@@ -284,10 +330,11 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False
     # they are needed to match the order of the summaries while using sample_summaries().
     selected_docs = []
     selected_refs = []
+    docs = get_sources_from_pas_lists(docs_pas_lists)
 
     # Computing the score for each document than compute the average.
     for i in range(len(docs_pas_lists)):
-        if direct_speech_ratio(docs_pas_lists[i]) < 0.15 or not rem_ds:
+        if direct_speech_ratio(docs[i]) < 0.15 or not rem_ds:
             print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
             pas_no = len(docs_pas_lists[i])
 
@@ -299,7 +346,55 @@ def testing(model_name, docs_pas_lists, doc_matrix, refs, dynamic_summ_len=False
             else:
                 summary = generate_summary(docs_pas_lists[i], scores, summ_len=100)
             summaries.append(summary)
-            selected_docs.append(docs_pas_lists[i])
+            selected_docs.append(docs[i])
+            selected_refs.append(refs[i])
+
+            # Get the rouge scores.
+            score = rouge_score([summary], [refs[i]])
+            rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
+            rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
+            rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
+            rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
+            rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
+            rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
+            recall_score_list.append(score["rouge_1_recall"])
+
+    sample_summaries(model_name, selected_docs, selected_refs, summaries, recall_score_list, batch=batch)
+
+    for k in rouge_scores.keys():
+        rouge_scores[k] /= len(summaries)
+
+    return rouge_scores, recall_score_list
+
+
+# Compute rouge scores given a model.
+def testing_extract(model_name, docs, doc_matrix, refs, dynamic_summ_len=False, batch=0, rem_ds=False):
+    rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
+                    "rouge_2_precision": 0, "rouge_2_f_score": 0}
+    recall_score_list = []
+
+    pred_scores = predict_scores(model_name, doc_matrix)
+    summaries = []
+    # Store the docs and refs which are not discarded,
+    # they are needed to match the order of the summaries while using sample_summaries().
+    selected_docs = []
+    selected_refs = []
+
+    # Computing the score for each document than compute the average.
+    for i in range(len(docs)):
+        if direct_speech_ratio(docs[i]) < 0.15 or not rem_ds:
+            print("Processing doc:" + str(i) + "/" + str(len(docs)))
+            sents_no = len(docs[i])
+
+            # Cutting the scores to the length of the document and arrange them by score
+            # preserving the original position.
+            scores = pred_scores[i][:sents_no]
+            if dynamic_summ_len:
+                summary = generate_extract_summary(docs[i], scores, summ_len=len(refs[i].split()))
+            else:
+                summary = generate_extract_summary(docs[i], scores, summ_len=100)
+            summaries.append(summary)
+            selected_docs.append(docs[i])
             selected_refs.append(refs[i])
 
             # Get the rouge scores.
@@ -343,23 +438,3 @@ def testing_weighted(docs_pas_lists, refs, weights, summ_len=100):
         rouge_scores[k] /= len(docs_pas_lists)
     return rouge_scores
 
-
-# Assign scores to each pas in the document
-def score_document_2(doc_vectors, ref_vectors):
-    max_len = len(doc_vectors)
-    scores = np.zeros(max_len)
-    doc_vectors = doc_vectors[~np.all(doc_vectors == 0, axis=1)]
-    ref_vectors = ref_vectors[~np.all(ref_vectors == 0, axis=1)]
-    doc_len = len(doc_vectors)
-    features_no = 6
-    doc_emb_vectors = [doc_vector[features_no:] for doc_vector in doc_vectors]
-    ref_emb_vectors = [ref_vector[features_no:] for ref_vector in ref_vectors]
-
-    for ref_emb in ref_emb_vectors:
-        distances = [np.linalg.norm(ref_emb - doc_emb) for doc_emb in doc_emb_vectors]
-        min_index = distances.index(min(distances))
-        while scores[min_index] == 1 and np.any(scores[:doc_len] != np.ones(doc_len)):
-            distances[min_index] += 1000
-            min_index = distances.index(min(distances))
-        scores[min_index] = 1
-    return scores

@@ -185,8 +185,7 @@ def get_sources_from_pas_lists(pas_lists, dots=True):
 
 
 # Print some relevant summaries from a batch of texts.
-def sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_list, batch=-1):
-    docs = get_sources_from_pas_lists(docs_pas_lists, dots=False)
+def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch=-1):
     best_index = recall_score_list.index(max(recall_score_list))
     worst_index = recall_score_list.index(min(recall_score_list))
 
@@ -221,27 +220,22 @@ def sample_summaries(model_name, docs_pas_lists, refs, summaries, recall_score_l
 
 
 # Compute the ratio between direct speech in the text and the whole text (given a pas list).
-def direct_speech_ratio(pas_list):
+def direct_speech_ratio(sentences):
     size = 0
     ds_size = 0
     used_sentences = []
-    for pas in pas_list:
-        original_sentence = pas.sentence
-        if original_sentence not in used_sentences:
-            used_sentences.append(original_sentence)
+    for sentence in sentences:
+        if sentence not in used_sentences:
+            used_sentences.append(sentence)
 
             trimmed_sentence = re.sub(
-                '([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)',
-                r'\1 \3',
-                original_sentence)
-            trimmed_sentence = re.sub('\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)', r'\2',
-                                      trimmed_sentence)
-            trimmed_sentence = re.sub('([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"', r'\1',
-                                      trimmed_sentence)
+                '([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)', r'\1 \3', sentence)
+            trimmed_sentence = re.sub('\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)', r'\2', trimmed_sentence)
+            trimmed_sentence = re.sub('([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"', r'\1', trimmed_sentence)
             trimmed_sentence = re.sub('\"([a-zA-Z0-9 .,:;\'_\-]+)\"', '', trimmed_sentence)
 
-            size += len(original_sentence)
-            ds_size += len(original_sentence) - len(trimmed_sentence)
+            size += len(sentence)
+            ds_size += len(sentence) - len(trimmed_sentence)
 
     return ds_size / size
 
