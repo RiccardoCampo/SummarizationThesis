@@ -307,7 +307,7 @@ def generate_extract_summary(sentences, scores, summ_len=100):
     size = 0
     j = 0
     while size < summ_len and j < pas_no:
-        if size + sorted_sents[j][1].split() < summ_len:
+        if size + len(sorted_sents[j][1].split()) < summ_len:
             best_sents.append(sorted_sents[j][1])
         size += len(sorted_sents[j][1].split())
 
