@@ -310,6 +310,7 @@ def generate_extract_summary(sentences, scores, summ_len=100):
         if size + len(sorted_sents[j][1].split()) < summ_len:
             best_sents.append(sorted_sents[j][1])
         size += len(sorted_sents[j][1].split())
+        j += 1
 
     summary = ""
     for sent in best_sents:
