@@ -91,7 +91,7 @@ def get_duc():
             # Getting the respective summary.
             found = False
             summ_dir_name = ""
-            for summ_dir in os.listdir(duc_path + "/summaries"):
+            for summ_dir in sorted(os.listdir(duc_path + "/summaries")):
                 if summ_dir.startswith(dir_name):
                     summ_dir_name = summ_dir
                     found = True
