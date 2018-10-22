@@ -316,6 +316,8 @@ def generate_extract_summary(sentences, scores, summ_len=100):
                 size += sent_len
         j += 1
 
+    best_indices.sort()
+
     summary = ""
     for index in best_indices:
         summary += sentences[index] + "\n"
