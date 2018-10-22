@@ -22,12 +22,34 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-docs, refs, _ = get_duc()
-_, _, scores = get_matrices((0.0, 1.0), 0)
 
-print(generate_extract_summary(tokens(docs[0]), scores[0]))
+import corenlp
+
+text = "Tom is a smart boy. He knows a lot of things."
+
+# We assume that you've downloaded Stanford CoreNLP and defined an environment
+# variable $CORENLP_HOME that points to the unzipped directory.
+# The code below will launch StanfordCoreNLPServer in the background
+# and communicate with the server to annotate the sentence.
+with corenlp.CoreNLPClient(annotators="coref".split(), timeout=100000) as client:
+    ann = client.annotate(text)
 
 
+print(ann)
+
+# You can access annotations using ann.
+sentence = ann.sentence[0]
+
+# The corenlp.to_text function is a helper function that
+# reconstructs a sentence from tokens.
+print(corenlp.to_text(sentence))
+
+# You can access any property within a sentence.
+print(sentence.text)
+
+# Likewise for tokens
+token = sentence.token[0]
+print(token.lemma)
 
 
 """   MASS TRAINING

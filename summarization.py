@@ -303,21 +303,22 @@ def generate_extract_summary(sentences, scores, summ_len=100):
 
     # Get the indices of the sorted pas, then a list of the sorted realized pas.
     sorted_indices = [sorted_score[0] for sorted_score in sorted_scores]
-    sorted_sents = [(index, sentences[index]) for index in sorted_indices]
-    best_sents = []
 
+    best_indices = []
     size = 0
     j = 0
     while size < summ_len and j < sents_no:
-        if len(sorted_sents[j][1]) > 3:
-            if size + len(sorted_sents[j][1].split()) < summ_len:
-                best_sents.append(sorted_sents[j][1])
-            size += len(sorted_sents[j][1].split())
+        index = sorted_indices[j]
+        sent_len = len(sentences[index].split())
+        if sent_len > 3:
+            if size + sent_len < summ_len:
+                best_indices.append(index)
+                size += sent_len
         j += 1
 
     summary = ""
-    for sent in best_sents:
-        summary += sent + ".\n"
+    for index in best_indices:
+        summary += sentences[index] + "\n"
 
     return summary
 
