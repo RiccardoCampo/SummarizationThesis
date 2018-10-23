@@ -5,6 +5,7 @@ import string
 import unicodedata
 import time
 import pickle
+import corenlp
 
 import nltk
 import tensorflow as tf
@@ -240,3 +241,43 @@ def direct_speech_ratio(sentences):
     return ds_size / size
 
 
+def resolve_anaphora(sentences):
+    text_structure = [[word for word in sentence.split()] for sentence in sentences]
+
+    text = ""
+    for sentence in sentences:
+        text += sentence + " "
+
+    with corenlp.CoreNLPClient(annotators="coref".split()) as client:
+        annotations = client.annotate(text)
+
+    for chain in annotations.corefChain:
+        reference_sent_index = -1
+        reference_index = -1
+        for mention in chain.mention:
+            if mention.mentionType == "PROPER":
+                reference_sent_index = mention.sentenceIndex
+                reference_index = mention.beginIndex
+            if mention.mentionType == "PRONOMINAL":
+                pronoun_sent_index = mention.sentenceIndex
+                pronoun_index = mention.beginIndex
+                if reference_index > -1:
+                    text_structure[pronoun_sent_index][pronoun_index] = text_structure[reference_sent_index][
+                        reference_index]
+
+    result_sentences = []
+    for sentence in text_structure:
+        result_sentence = ""
+        for word in sentence:
+            result_sentence += word + " "
+        sentences.append(result_sentence)
+
+    return result_sentences
+
+
+def resolve_anaphora_pas_list(pas_list):
+    realized_pas_list = [pas.realized_pas for pas in pas_list]
+    resolved_sentences = resolve_anaphora(realized_pas_list)
+
+    for pas in pas_list:
+        pas.realized_pas = resolved_sentences[pas_list.index(pas)]

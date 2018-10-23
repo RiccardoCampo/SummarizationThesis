@@ -415,14 +415,19 @@ def get_matrices(weights, scores, index=-1):
         dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
 
     if scores == 1:
-        scores_path = dataset_path + "_sent_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+        # scores_path = dataset_path + "_sent_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+        scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
     elif scores == 2:
-        scores_path = dataset_path + "_sent_score_matrix_bestn.dat"
+        #scores_path = dataset_path + "_sent_score_matrix_bestn.dat"
+        scores_path = dataset_path + "_score_matrix_bestn.dat"
     else:
-        scores_path = dataset_path + "_sent_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+        #scores_path = dataset_path + "_sent_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
+        scores_path = dataset_path + "_score_matrix" + str(weights[0]) + "-" + str(weights[1]) + ".dat"
 
-    doc_path = dataset_path + "_doc_sent_matrix.dat"
-    ref_path = dataset_path + "_ref_sent_matrix.dat"
+    # doc_path = dataset_path + "_doc_sent_matrix.dat"
+    doc_path = dataset_path + "_doc_matrix.dat"
+    # ref_path = dataset_path + "_ref_sent_matrix.dat"
+    ref_path = dataset_path + "_ref_matrix.dat"
 
     with open(os.getcwd() + doc_path, "rb") as docs_f:
         doc_matrix = pickle.load(docs_f)

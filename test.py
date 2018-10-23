@@ -38,30 +38,30 @@ def test(series_name, dataset, weights=None):
             if index == 34:
                 training_no = last_index_size
             doc_matrix, _, _ = get_matrices(weights, 0, index=index)
-            #docs_pas_lists, refs_pas_lists = get_pas_lists(index)
-            #refs = get_sources_from_pas_lists(refs_pas_lists)
-            docs, refs, _ = get_duc()
+            docs_pas_lists, refs_pas_lists = get_pas_lists(index)  # ABSTRACTIVE
+            refs = get_sources_from_pas_lists(refs_pas_lists)      # ABSTRACTIVE
+            # docs, refs, _ = get_duc()         # EXTRACTIVE
 
-            #docs_pas_lists = docs_pas_lists[training_no:]
-            docs = docs[training_no:]
+            docs_pas_lists = docs_pas_lists[training_no:]
+            # docs = docs[training_no:]         # EXTRACTIVE
 
-
-            #doc_matrix = doc_matrix[training_no:, :300, :]
+            # doc_matrix = doc_matrix[training_no:, :300, :]        # TESTING DUC WITH NYT MODEL
             doc_matrix = doc_matrix[training_no:, :, :]
             refs = refs[training_no:]
 
-            #extended_doc_matrix = np.zeros((doc_matrix.shape[0], 385, doc_matrix.shape[2]))
-            #extended_doc_matrix[:doc_matrix.shape[0], :doc_matrix.shape[1], :doc_matrix.shape[2]] = doc_matrix
-            #doc_matrix = extended_doc_matrix
+            # TESTING NYT WITH DUC MODEL
+            # extended_doc_matrix = np.zeros((doc_matrix.shape[0], 385, doc_matrix.shape[2]))
+            # extended_doc_matrix[:doc_matrix.shape[0], :doc_matrix.shape[1], :doc_matrix.shape[2]] = doc_matrix
+            # doc_matrix = extended_doc_matrix
 
-            score, recall_list_part = testing_extract(model_name,
-                                                      docs, #docs_pas_lists,
-                                                      doc_matrix,
-                                                      refs,
-                                                      dynamic_summ_len=True,
-                                                      batch=index,
-                                                      rem_ds=True
-                                                      )
+            score, recall_list_part = testing(model_name, # testing_extract(model_name, EXTRACTIVE
+                                              docs_pas_lists,    # ,docs # EXTRACTIVE
+                                              doc_matrix,
+                                              refs,
+                                              dynamic_summ_len=True,
+                                              batch=index,
+                                              rem_ds=True
+                                              )
 
             rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
             rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]

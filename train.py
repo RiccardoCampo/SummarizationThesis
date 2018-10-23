@@ -26,14 +26,14 @@ def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores, 
         batches = 0
         train_size = 372
         val_size = 50
-        doc_size = 200   # 385
+        doc_size = 385 # 200   #EXTRACIVE
         duc_index = -1
 
     training_no = train_size + val_size
     vector_size = 134
 
     for weights in weights_list:
-        model_name = dataset + "_sent_" + series_name + "_" + loss + "_dense" + str(dense_layers) + "_" + out_act + "_bs" + \
+        model_name = dataset + "_" + series_name + "_" + loss + "_dense" + str(dense_layers) + "_" + out_act + "_bs" + \
                      str(batch_size) + "_ep" + str(epochs) + "_scores" + str(scores) + "_" + str(weights)
         save_model = False              # Saves the model only when the training process is complete (last batch).
 

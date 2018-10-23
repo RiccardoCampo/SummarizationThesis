@@ -17,40 +17,16 @@ from pas import realize_pas, annotator
 from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary, \
     predict_scores, generate_extract_summary
 from train import train
-from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio, timer, tokens
+from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio, timer, tokens, \
+    resolve_anaphora
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
+text = "Obama is the the president of US. Florida is a nice place. It is good. He lives in Florida." \
+       " Trump is the current president. He owns Trump tower. I like his tower"
 
-import corenlp
-
-text = "Tom is a smart boy. He knows a lot of things."
-
-# We assume that you've downloaded Stanford CoreNLP and defined an environment
-# variable $CORENLP_HOME that points to the unzipped directory.
-# The code below will launch StanfordCoreNLPServer in the background
-# and communicate with the server to annotate the sentence.
-with corenlp.CoreNLPClient(annotators="coref".split(), timeout=100000) as client:
-    ann = client.annotate(text)
-
-
-print(ann)
-
-# You can access annotations using ann.
-sentence = ann.sentence[0]
-
-# The corenlp.to_text function is a helper function that
-# reconstructs a sentence from tokens.
-print(corenlp.to_text(sentence))
-
-# You can access any property within a sentence.
-print(sentence.text)
-
-# Likewise for tokens
-token = sentence.token[0]
-print(token.lemma)
-
+print(resolve_anaphora(tokens(text)))
 
 """   MASS TRAINING
 
