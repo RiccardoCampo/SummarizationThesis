@@ -248,7 +248,7 @@ def resolve_anaphora(sentences):
     for sentence in sentences:
         text += sentence + " "
 
-    with corenlp.CoreNLPClient(annotators="coref".split()) as client:
+    with corenlp.CoreNLPClient(annotators="coref".split(), timeout=1000000000) as client:
         annotations = client.annotate(text)
 
     for chain in annotations.corefChain:
