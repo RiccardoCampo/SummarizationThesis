@@ -15,7 +15,8 @@ from keras.layers import Dense, LSTM, Bidirectional, Masking, Lambda, Activation
 
 
 # Return the best PASs of the source text given the source text, the max number of PASs and the weights.
-from utils import sample_summaries, direct_speech_ratio, get_sources_from_pas_lists, tokens, text_cleanup
+from utils import sample_summaries, direct_speech_ratio, get_sources_from_pas_lists, tokens, text_cleanup, \
+    resolve_anaphora_pas_list
 
 
 def best_pas(pas_list, max_pas, weights):
@@ -247,6 +248,7 @@ def rouge_score(summaries, references):
 
 # Generate the summary give the Model and the source text in the form of pas list.
 def generate_summary(pas_list, scores, summ_len=100):
+    resolve_anaphora_pas_list(pas_list)
     pas_no = len(pas_list)
     sorted_scores = [(j, scores[j]) for j in range(len(scores))]
     sorted_scores.sort(key=lambda tup: -tup[1])
