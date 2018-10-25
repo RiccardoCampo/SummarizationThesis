@@ -23,8 +23,16 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-text = "Obama is the the president of US. Florida is a nice place. It is good. He lives in Florida." \
-       " Trump is the current president. He owns Trump tower. I like his tower"
+
+text = "My car is parked over there. It's the blue one. Riccardo and John are students. He is 24"
+
+text = "Barak Obama was elected to the Illinois state senate in 1996 and served there for eight years. In 2004, he" \
+       " was elected by a record majority to the U.S. Senate from Illinois and, in February 2007, announced " \
+       "his candidacy for President"
+
+docs, _, _ = get_duc()
+text = docs[422]
+
 
 print(resolve_anaphora(tokens(text)))
 

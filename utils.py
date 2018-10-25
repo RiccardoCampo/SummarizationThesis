@@ -251,26 +251,61 @@ def resolve_anaphora(sentences):
     with corenlp.CoreNLPClient(annotators="coref".split(), timeout=1000000000) as client:
         annotations = client.annotate(text)
 
-    for chain in annotations.corefChain:
-        reference_sent_index = -1
-        reference_index = -1
-        for mention in chain.mention:
-            if mention.mentionType == "PROPER":
-                reference_sent_index = mention.sentenceIndex
-                reference_index = mention.beginIndex
-            if mention.mentionType == "PRONOMINAL":
-                pronoun_sent_index = mention.sentenceIndex
-                pronoun_index = mention.beginIndex
-                if reference_index > -1:
-                    text_structure[pronoun_sent_index][pronoun_index] = text_structure[reference_sent_index][
-                        reference_index]
+    print(annotations)
+    print("___________________________________________")
+    print(annotations.corefChain)
+    print("___________________________________________")
+    print(text_structure)
+
+    sentence_modifiers = [0] * len(sentences)
+    for i in range(len(sentences)):
+        sentence_annotations = annotations.sentence[i]
+        if sentence_annotations.hasCorefMentionsAnnotation:
+            for mention in sentence_annotations.mentionsForCoref:
+                if mention.mentionType == "PRONOMINAL":
+                    print("-_--_--------_----______-")
+                    print(text_structure[i])
+                    pronoun_id = mention.mentionID
+                    # Sentence, Begin, End.
+                    pronoun_sent_index = i
+
+                    tks = list(sentence_annotations.token)
+                    print(tks)
+                    punct_modifier = sum([1 for j in range(len(tks)) if tks[j].word in string.punctuation and
+                                          j < mention.startIndex])
+
+                    print(punct_modifier)
+                    print(sentence_modifiers[i])
+                    pronoun_begin_index = mention.startIndex + sentence_modifiers[i] - punct_modifier
+                    pronoun_end_index = mention.endIndex + sentence_modifiers[i] - punct_modifier
+                    print(pronoun_begin_index)
+                    print(pronoun_end_index)
+                    pronoun_chains = []
+                    for chain in annotations.corefChain:
+                        for chain_mention in chain.mention:
+                            if chain_mention.mentionID == pronoun_id:
+                                pronoun_chains.append(chain)
+                    if pronoun_chains:
+                        pronoun_chains.sort(key=lambda x: x.representative, reverse=True)
+
+                        selected_chain = pronoun_chains[0]
+                        for chain_mention in selected_chain.mention:
+                            if chain_mention.mentionType == "PROPER" or chain_mention.mentionType == "NOMINAL":
+                                reference_sent_index = chain_mention.sentenceIndex
+                                reference_begin_index = chain_mention.beginIndex
+                                reference_end_index = chain_mention.endIndex
+                                print(text_structure[pronoun_sent_index][pronoun_begin_index])
+                                text_structure[pronoun_sent_index][pronoun_begin_index:pronoun_end_index] = \
+                                    text_structure[reference_sent_index][reference_begin_index:reference_end_index]
+                                sentence_modifiers[i] += reference_end_index - reference_begin_index - 1
+                                break
 
     result_sentences = []
     for sentence in text_structure:
         result_sentence = ""
         for word in sentence:
             result_sentence += word + " "
-        sentences.append(result_sentence)
+        result_sentences.append(result_sentence)
 
     return result_sentences
 
