@@ -123,8 +123,8 @@ def realize_pas(pas):
     # De-spacing apices and parentheses (' " " '  to  '" "').
     phrase = re.sub("\" ([a-zA-Z0-9 ,']+) \"", r'"\1"', phrase)
     phrase = re.sub("\( ([a-zA-Z0-9 ,']+) \)", r'"\1"', phrase)
-    # De-spacing the commas.
-    phrase = re.sub(" , ", r", ", phrase)
+    # De-spacing punctuation.
+    phrase = re.sub(" [.,:;] ", r", ", phrase)
 
     return phrase
 
@@ -150,9 +150,9 @@ def fix_verb(pas):
                     verb_prefix = words[verb_index - i] + " " + verb_prefix
                 else:
                     break
-                # Excluding the cases in which the only part added is "to".
-                if not (verb_prefix.startswith("to")):
-                    verb = verb_prefix + " " + verb
+            # Excluding the cases in which the only part added is "to".
+            if not (verb_prefix.startswith("to")):
+                verb = verb_prefix + verb
     return verb
 
 

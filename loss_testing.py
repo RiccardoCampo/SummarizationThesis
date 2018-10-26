@@ -12,16 +12,15 @@ def summary_clustering_score(document_vectors, summary_vectors, reference_vector
 
     vector_dim = len(document_vectors[0])
     centroid = [np.mean(np.array([vec[i] for vec in reference_vectors])) for i in range(len(reference_vectors[0]))]
-  #  init_centroids = np.array([[0] * vector_dim, centroid])
+    #  init_centroids = np.array([[0] * vector_dim, centroid])
 
- #   init_centroids = np.array(new_points([0.49821944, 0.56260339, 0.17955776, 0.00185936, 0.50955343, 0.12072317],
-  #                             [0.69208472, 0.71773158, 0.3029794, 0.00217993, 0.67792622, 1.11437755], 1, 6))
+    # init_centroids = np.array(new_points([0.49821944, 0.56260339, 0.17955776, 0.00185936, 0.50955343, 0.12072317],
+    #                                    [0.69208472, 0.71773158, 0.3029794, 0.00217993, 0.67792622, 1.11437755], 1, 6))
 
     init_centroids = np.array(new_points([0] * vector_dim, centroid, 1, 6))
 
-
-    X = np.concatenate((document_vectors, reference_vectors))
-    kmeans = KMeans(n_clusters=2, init=init_centroids).fit(X)
+    x = np.concatenate((document_vectors, reference_vectors))
+    kmeans = KMeans(n_clusters=2, init=init_centroids).fit(x)
 
     clusters = kmeans.cluster_centers_
     doc_predict = kmeans.predict(document_vectors)
@@ -37,7 +36,7 @@ def summary_clustering_score(document_vectors, summary_vectors, reference_vector
             index = distances[i][0]
             doc_predict[index] = 1
             for j in range(len(best_predict)):
-                if (document_vectors[index] == summary_vectors[j]).all():
+                if document_vectors[index] == summary_vectors[j]:
                     best_predict[j] = 1
 
     vec_perc = np.count_nonzero(doc_predict) / len(document_vectors)
@@ -68,10 +67,8 @@ def summary_clustering_score(document_vectors, summary_vectors, reference_vector
         print("Original text selected pas percentage:")
         print("{:.3%}".format(vec_perc))
 
-
         print("Reference text selected pas percentage:")
         print("{:.3%}".format(ref_perc))
-
 
         print("Best pas selected pas percentage:")
         print("{:.3%}".format(best_perc))
@@ -92,8 +89,8 @@ def summary_clustering_score_2(document_vectors, summary_vectors, reference_vect
     summary_vectors = summary_vectors[~np.all(summary_vectors == 0, axis=1)]
     reference_vectors = reference_vectors[~np.all(reference_vectors == 0, axis=1)]
 
-    X = np.concatenate((document_vectors, reference_vectors))
-    kmeans = KMeans(n_clusters=len(reference_vectors), init=reference_vectors).fit(X)
+    x = np.concatenate((document_vectors, reference_vectors))
+    kmeans = KMeans(n_clusters=len(reference_vectors), init=reference_vectors).fit(x)
 
     clusters_no = np.unique(kmeans.predict(reference_vectors)).size
     doc_clusters = kmeans.predict(document_vectors)
@@ -103,7 +100,7 @@ def summary_clustering_score_2(document_vectors, summary_vectors, reference_vect
 
     # How many clusters of reference summaries are covered with the generated summary
     summ_coverage = np.unique(kmeans.predict(summary_vectors)).size / clusters_no
-    # Adjusted coverage takes into account the fact that the document itslef may not cover the reference summary.
+    # Adjusted coverage takes into account the fact that the document itself may not cover the reference summary.
     summ_adj_coverage = np.unique(kmeans.predict(summary_vectors)).size / np.count_nonzero(doc_coverage)
 
     if log:
@@ -141,7 +138,7 @@ def summary_clustering_score_3(document_vectors, summary_vectors, reference_vect
                 reference_vectors[i][j] = reference_vectors[i][j] / factor
 
     centroid = [np.mean(np.array([vec[i] for vec in reference_vectors])) for i in range(len(reference_vectors[0]))]
-    #init_centroids = np.array([[-1] * vector_dim, centroid])
+    # init_centroids = np.array([[-1] * vector_dim, centroid])
 
     #   init_centroids = np.array(new_points([0.49821944, 0.56260339, 0.17955776, 0.00185936, 0.50955343, 0.12072317],
     #                             [0.69208472, 0.71773158, 0.3029794, 0.00217993, 0.67792622, 1.11437755], 1, 6))
@@ -150,10 +147,10 @@ def summary_clustering_score_3(document_vectors, summary_vectors, reference_vect
 
     print(init_centroids)
 
-    X = np.concatenate((document_vectors, reference_vectors))
+    x = np.concatenate((document_vectors, reference_vectors))
     kmeans = KMeans(n_clusters=2,
                     init=init_centroids,
-                    ).fit(X)
+                    ).fit(x)
     vec_perc = np.count_nonzero(kmeans.predict(document_vectors)) / len(document_vectors)
     ref_perc = np.count_nonzero(kmeans.predict(reference_vectors)) / len(reference_vectors)
     best_perc = np.count_nonzero(kmeans.predict(summary_vectors)) / len(summary_vectors)

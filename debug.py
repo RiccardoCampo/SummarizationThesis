@@ -9,32 +9,25 @@ import numpy as np
 import logging
 import keras
 
-from dataset import get_matrices, get_duc, get_nyt, \
-    store_pas_nyt_dataset, compute_idfs, store_matrices, get_pas_lists, arrange_nyt_pas_lists, \
-    store_full_sentence_matrices, store_score_matrices, store_bestn_score_matrices
+from dataset_text import get_duc, get_nyt, \
+    store_pas_nyt_dataset, compute_idfs, get_pas_lists, arrange_nyt_pas_lists
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas, annotator
-from summarization import testing, testing_weighted, rouge_score, build_model, train_model, best_pas, generate_summary, \
+from summarization import best_pas, generate_summary, \
     predict_scores, generate_extract_summary
 from train import train
 from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio, timer, tokens, \
-    resolve_anaphora
+    resolve_anaphora, resolve_anaphora_pas_list
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
+docs, _ = get_pas_lists(-1)
 
-text = "My car is parked over there. It's the blue one. Riccardo and John are students. He is 24"
+for pas_list in docs[13:14]:
+    print(docs.index(pas_list))
+    resolve_anaphora_pas_list(pas_list)
 
-text = "Barak Obama was elected to the Illinois state senate in 1996 and served there for eight years. In 2004, he" \
-       " was elected by a record majority to the U.S. Senate from Illinois and, in February 2007, announced " \
-       "his candidacy for President"
-
-docs, _, _ = get_duc()
-text = docs[422]
-
-
-print(resolve_anaphora(tokens(text)))
 
 """   MASS TRAINING
 
