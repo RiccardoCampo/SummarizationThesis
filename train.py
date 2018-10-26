@@ -3,8 +3,21 @@ from dataset_scores import get_matrices
 from deep_model import build_model, train_model
 
 
-# Train a model with the specified parameters.
 def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores_type, dataset, extractive, weights=None):
+    """
+    Train a model with the specified parameters.
+
+    :param series_name: name of the model or training series number.
+    :param loss: loss function.
+    :param dense_layers: number of dense layer after the BLSTM.
+    :param out_act: output activation.
+    :param batch_size: batch size.
+    :param epochs: epochs.
+    :param scores_type: "bin", "non_bin" or "bestN"
+    :param dataset: dataset with which the model will be trained.
+    :param extractive: whether it is extractive summarization or not.
+    :param weights: a tuple of two weights to average 0/1 clustering and N clusters.
+    """
     # If the weights are not specified all of them are used.
     if weights:
         weights_list = [weights]
@@ -13,14 +26,14 @@ def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores_t
                         (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                         (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
 
-    last_index_size = 685       # Size of the last batch training portion.
+    last_index_size = 685       # Size of the last batch training portion for nyt dataset.
 
     # Indices varies based on the dataset.
     if dataset == "nyt":
         batches = 35
         train_size = 666
         val_size = 166
-        doc_size = 300
+        doc_size = 300      # Max size of the matrices in case of nyt dataset.
         duc_index = 0       # Used to set the parameter "index" to -1 when using DUC, to get duc matrices and scores.
     else:
         batches = 0
@@ -51,6 +64,7 @@ def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores_t
             if index == batches - 1:
                 save_model = True
 
+            # Compute the initial epoch to obtain a continuous graph.
             init_ep = (index if index >= 0 else 0) * epochs
 
             print(weights)

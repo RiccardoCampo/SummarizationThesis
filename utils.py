@@ -6,7 +6,6 @@ import unicodedata
 import time
 import pickle
 import corenlp
-
 import nltk
 import tensorflow as tf
 import tensorflow_hub as hub
@@ -21,8 +20,13 @@ embedder = hub.Module("https://tfhub.dev/google/random-nnlm-en-dim128/1")
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
 
-# Preprocessing the input text to make it ready for the SRL
 def text_cleanup(full_text):
+    """
+    Preprocessing the input text to make it ready for the SRL.
+
+    :param full_text: text input.
+    :return: processed text.
+    """
     # Eliminating new lines as it causes problems with the unicode normalization.
     full_text = full_text.replace("\n", " ")
 
@@ -63,8 +67,13 @@ def text_cleanup(full_text):
     return full_text
 
 
-# Remove stopwords and punctuation and stems a sentence.
 def stem_and_stopword(sentence):
+    """
+    Remove stopwords and punctuation and stems a sentence.
+
+    :param sentence: input sentence.
+    :return: list of stems.
+    """
     stemmed_sent = []
     words = word_tokenize(sentence)
     filtered_words = [w for w in words if w not in stop_words]                                  # Removing stopwords.
@@ -77,8 +86,13 @@ def stem_and_stopword(sentence):
     return stemmed_sent
 
 
-# Remove punctuation.
 def remove_punct(sentence):
+    """
+    Remove punctuation.
+
+    :param sentence: input sentence.
+    :return: sentence without punctuation.
+    """
     sent = ""
     words = sentence.split()
     filtered_words = [''.join(c for c in s if c not in string.punctuation) for s in words]      # Removing punctuation.
@@ -89,8 +103,14 @@ def remove_punct(sentence):
     return sent
 
 
-# Compute the TFIDF score for each term in the sentences given the IDF of the dataset.
 def tf_idf(sentences, idf_file_name):
+    """
+    Compute the TFIDF score for each term in the sentences given the IDF of the dataset.
+
+    :param sentences: list of sentences.
+    :param idf_file_name: name of the idf file.
+    :return: tf-idf scores of the terms in the input sentences.
+    """
     with open(idf_file_name, "rb") as fp:
         idfs = pickle.load(fp)
     max_idf = max(idfs.values())
@@ -126,8 +146,13 @@ def tf_idf(sentences, idf_file_name):
     return tf_idfs
 
 
-# Returns the sentence embeddings list of the input sentences list.
 def sentence_embeddings(sentences):
+    """
+    Returns the sentence embeddings list of the input sentences list.
+
+    :param sentences: list of sentences.
+    :return: list of sentence embeddings.
+    """
     session = tf.Session()
     session.run([tf.global_variables_initializer(), tf.tables_initializer()])
     embeddings = session.run(embedder(sentences))
@@ -136,9 +161,14 @@ def sentence_embeddings(sentences):
     return embeddings
 
 
-# Compute centrality scores of each sentence in a set of sentences (given as sentence embeddings).
-# The score consist of the sum of the similarities between a sentence and all the others normalized by the max sum.
 def centrality_scores(sent_embeddings):
+    """
+    Compute centrality scores of each sentence in a set of sentences (given as sentence embeddings).
+    The score consist of the sum of the similarities between a sentence and all the others normalized by the max sum.
+
+    :param sent_embeddings: list of sentences' embeddings.
+    :return: centrality score of each sentence.
+    """
     centr_scores = []
     for sent1 in sent_embeddings:
         sim_sum = 0
@@ -152,20 +182,38 @@ def centrality_scores(sent_embeddings):
     return centr_scores
 
 
-# Using this to check the execution time.
 def timer(text, start_time):
+    """
+    Using this to check the execution time.
+
+    :param text: string to print.
+    :param start_time: start time.
+    :return: current time.
+    """
     current_time = time.time()
     print(text + str(current_time - start_time))
     return current_time
 
 
 def tokens(text):
+    """
+    Tokenize the input text.
+
+    :param text: input text.
+    :return: list of sentences.
+    """
     return tokenizer.tokenize(text)
 
 
-# Get the source text starting from the pas list (each pas contain the original sentence from which it has
-# been extracted, there can be multiple pas with the same sentence).
 def get_sources_from_pas_lists(pas_lists, dots=True):
+    """
+    Get the source text starting from the pas list (each pas contain the original sentence from which it has
+    been extracted, there can be multiple pas with the same sentence).
+
+    :param pas_lists: list of pas list.
+    :param dots: if True add dots at the end of each sentence.
+    :return: list of source sentences.
+    """
     sources = []
     for pas_list in pas_lists:
         sentences = []
@@ -185,8 +233,17 @@ def get_sources_from_pas_lists(pas_lists, dots=True):
     return sources
 
 
-# Print some relevant summaries from a batch of texts.
 def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch=-1):
+    """
+    Print some relevant summaries from a batch of texts.
+
+    :param model_name: name of the model used to produce the summaries.
+    :param docs: list of original documents.
+    :param refs: list of reference summaries.
+    :param summaries: list of system generated summaries.
+    :param recall_score_list: list of rouge 1 recall score of each summary.
+    :param batch: batch number.
+    """
     best_index = recall_score_list.index(max(recall_score_list))
     worst_index = recall_score_list.index(min(recall_score_list))
 
@@ -220,8 +277,13 @@ def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch
             print("=================================", file=dest_f)
 
 
-# Compute the ratio between direct speech in the text and the whole text (given a pas list).
 def direct_speech_ratio(sentences):
+    """
+    Compute the ratio between direct speech in the text and the whole text (given a pas list).
+
+    :param sentences: list of sentences.
+    :return: direct speech ratio of the document.
+    """
     size = 0
     ds_size = 0
     used_sentences = []
@@ -242,6 +304,12 @@ def direct_speech_ratio(sentences):
 
 
 def resolve_anaphora(sentences):
+    """
+    Resolve anaphora (pronominal coreference).
+
+    :param sentences: list of input sentences.
+    :return: sentences with resolved pronouns.
+    """
     text_structure = [[word for word in sentence.split()] for sentence in sentences]
 
     text = ""
@@ -325,6 +393,11 @@ def resolve_anaphora(sentences):
 
 
 def resolve_anaphora_pas_list(pas_list):
+    """
+    Reselve the anaphora starting from a pas_list. Directly modifies the realized_pas field in each pas.
+
+    :param pas_list: pas list.
+    """
     realized_pas_list = [(pas.realized_pas + "..\n").replace(" ..", "..") for pas in pas_list]
     resolved_sentences = resolve_anaphora(realized_pas_list)
 

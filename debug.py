@@ -12,7 +12,7 @@ import keras
 from dataset_text import get_duc, get_nyt, \
     store_pas_nyt_dataset, compute_idfs, get_pas_lists, arrange_nyt_pas_lists
 from loss_testing import summary_clustering_score, summary_clustering_score_2
-from pas import realize_pas, annotator
+from pas import realize_pas
 from summarization import best_pas, generate_summary, \
     predict_scores, generate_extract_summary
 from train import train

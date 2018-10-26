@@ -1,16 +1,21 @@
 import os
 import numpy as np
+
 from pyrouge import Rouge155
-
-
-# Return the best PASs of the source text given the source text, the max number of PASs and the weights.
 from deep_model import predict_scores
 from utils import sample_summaries, direct_speech_ratio, get_sources_from_pas_lists, tokens, text_cleanup, \
     resolve_anaphora_pas_list
 
 
-# Generate the summary give the Model and the source text in the form of pas list.
 def generate_summary(pas_list, scores, summ_len=100):
+    """
+    Generate the summary given the scores and the source text in the form of pas list.
+
+    :param pas_list: input pas list to summarize.
+    :param scores: vector containing each pas's score.
+    :param summ_len: maximum length of the generated summary.
+    :return: string containing the summary.
+    """
     resolve_anaphora_pas_list(pas_list)
     pas_no = len(pas_list)
     sorted_scores = [(j, scores[j]) for j in range(len(scores))]
@@ -58,8 +63,16 @@ def generate_summary(pas_list, scores, summ_len=100):
     return summary
 
 
-# Generate the summary give the Model and the source text in the form of pas list.
 def generate_extract_summary(sentences, scores, summ_len=100):
+    """
+    Generate the summary given the scores and the source text in the form of sentence list.
+    Simply selects the best scoring sentences until the length is reached.
+
+    :param sentences: list of sentences.
+    :param scores: vector with sentences' score.
+    :param summ_len: maximum length of the generated summary.
+    :return: string containing the summary.
+    """
     sents_no = len(sentences)
 
     scores = scores[:sents_no]
@@ -91,6 +104,14 @@ def generate_extract_summary(sentences, scores, summ_len=100):
 
 
 def best_pas(pas_list, max_pas, weights):
+    """
+    Return the best PASs picking pas with the higher weighted sum of the features until max_pas are selected.
+
+    :param pas_list: input pas list.
+    :param max_pas: number of selected pas.
+    :param weights: list of weights.
+    :return: list of best scoring pas.
+    """
     # Creating a list of PASs and relative scores then ordering it.
     sorted_list = []
     for pas in pas_list:
@@ -106,11 +127,16 @@ def best_pas(pas_list, max_pas, weights):
     return best_pas_list
 
 
-# Return the ROUGE evaluation given source and reference summary
 def document_rouge_scores(summary, reference):
+    """
+    Return the ROUGE evaluation given source and reference summary.
+
+    :param summary: system generated summary.
+    :param reference: human generated reference summary.
+    :return: rouge scores.
+    """
     # ROUGE package needs to read model(reference) and system(computed) summary from specific folders,
     # so temp files are created to store these two.
-
     system_path = os.getcwd() + "/temp/system_summaries/"
     model_path = os.getcwd() + "/temp/model_summaries/"
     with open(system_path + "0.txt", "w") as temp_system:
@@ -132,9 +158,20 @@ def document_rouge_scores(summary, reference):
     return output_dict
 
 
-# Compute rouge scores given a model.
 def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
                               dynamic_summ_len=False, batch=0, rem_ds=False):
+    """
+    Compute rouge scores given a model.
+
+    :param model_name: model name.
+    :param docs_pas_lists: list of document pas lists.
+    :param doc_matrix: document matrix.
+    :param refs: list of reference summaries.
+    :param dynamic_summ_len: if True summary length will be the same as the reference summary.
+    :param batch: number of the batch to process.
+    :param rem_ds: if True sentences with more that 15% of direct speech will not be considered.
+    :return: average rouge scores and list of rouge 1 recall scores for each document.
+    """
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
     recall_score_list = []
@@ -182,8 +219,20 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
     return rouge_scores, recall_score_list
 
 
-# Compute rouge scores given a model.
+#
 def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_summ_len=False, batch=0, rem_ds=False):
+    """
+    Compute rouge scores given a model (Extractive summaries).
+
+    :param model_name: model name.
+    :param docs: list of documents.
+    :param doc_matrix: document matrix.
+    :param refs: list of reference summaries.
+    :param dynamic_summ_len: if True summary length will be the same as the reference summary.
+    :param batch: number of the batch to process.
+    :param rem_ds: if True sentences with more that 15% of direct speech will not be considered.
+    :return: average rouge scores and list of rouge 1 recall scores for each document.
+    """
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
     recall_score_list = []
@@ -232,8 +281,16 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
     return rouge_scores, recall_score_list
 
 
-# Getting the scores with the weighted method.
 def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, summ_len=100):
+    """
+    Computing rouge scores with the weighted method.
+
+    :param docs_pas_lists: list of document pas lists.
+    :param refs: list of reference summaries.
+    :param weights: list of weights
+    :param summ_len: maximum length of the generated summary.
+    :return: rouge scores.
+    """
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
 

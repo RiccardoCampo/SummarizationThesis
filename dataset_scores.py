@@ -1,18 +1,23 @@
 import os
 import pickle
-
 import numpy as np
 
-
-# Assign scores to each pas in the document
 from numpy.linalg import norm
 from sklearn.cluster import KMeans
-
 from dataset_text import get_pas_lists, get_duc
 from utils import text_cleanup, tokens, sentence_embeddings, centrality_scores, tf_idf, stem_and_stopword
 
 
 def score_document(doc_vectors, ref_vectors, weights, binary):
+    """
+    Assign scores to each pas in the document.
+
+    :param doc_vectors: vector representation of the documents.
+    :param ref_vectors: vector representation of the reference summaries.
+    :param weights: a tuple of two weights to average 0/1 clustering and N clusters.
+    :param binary: True to produce binary scores.
+    :return: scores.
+    """
     max_len = len(doc_vectors)
     scores = np.zeros(max_len)
     doc_vectors = doc_vectors[~np.all(doc_vectors == 0, axis=1)]
@@ -20,6 +25,10 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
     features_no = 6
 
     # PART ONE: 0/1 CLUSTERING.
+    # With both documents and reference vectors two clusters are built, one for summary and the other for non
+    # summary sentences, then to each sentence in the document it is assigned a score of 1 if it is in the summary
+    # cluster, 0 otherwise.
+
     # Removing zero rows from vectors lists.
     doc_ft_vectors = [doc_vector[:features_no] for doc_vector in doc_vectors]
     ref_ft_vectors = [ref_vector[:features_no] for ref_vector in ref_vectors]
@@ -35,6 +44,10 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
         scores[i] = predicted[i] * weights[0]
 
     # PART TWO: ONE CLUSTER FOR EACH REF. VECTOR
+    # With both documents and reference vectors a number of clusters equal to the number of reference sentence are
+    # built. Then to each sentence in the document it is assigned a score based on the distance from the closest cluster
+    # normalized by the maximum distance between the closest clusters distance in the document.
+
     doc_emb_vectors = [doc_vector[features_no:] for doc_vector in doc_vectors]
     ref_emb_vectors = [ref_vector[features_no:] for ref_vector in ref_vectors]
 
@@ -71,8 +84,16 @@ def score_document(doc_vectors, ref_vectors, weights, binary):
     return scores
 
 
-# Assign scores to each pas in the document
 def score_document_bestn(doc_vectors, ref_vectors):
+    """
+    Assign scores to each pas in the document.
+    BestN assign 1 to the documents sentences which are closest to the reference sentences in terms of distance between
+    sentence embeddings.
+
+    :param doc_vectors: vector representation of the documents.
+    :param ref_vectors: vector representation of the reference summaries.
+    :return: scores.
+    """
     max_len = len(doc_vectors)
     scores = np.zeros(max_len)
     doc_vectors = doc_vectors[~np.all(doc_vectors == 0, axis=1)]
@@ -92,8 +113,13 @@ def score_document_bestn(doc_vectors, ref_vectors):
     return scores
 
 
-# Matrix representation is computed and stored.
 def store_matrices(index):
+    """
+    Matrix representation is computed and stored.
+    The dataset is represented by a three dimensional matrix, (documents, sentences, vector representation components).
+
+    :param index: represent the batch of compact nyt pas to get or, if -1, it tells to get duc pas lists.
+    """
     if index < 0:
         docs_pas_lists, refs_pas_lists = get_pas_lists(-1)
         dataset_path = "/dataset/duc/duc"
@@ -128,9 +154,14 @@ def store_matrices(index):
         pickle.dump(docs_3d_matrix, dest_f)
 
 
-# Scores are computed and stored.
-# score type can be "non_bin" "bin" "bestN"
 def store_score_matrices(index, scores_type, extractive):
+    """
+    Scores matrices are computed and stored (documents, scores).
+
+    :param index: represent the batch of compact nyt pas to get or, if -1, it tells to get duc pas lists.
+    :param scores_type: can be "non_bin" "bin" "bestN".
+    :param extractive: whether it is extractive summarization or not.
+    """
     if index < 0:
         dataset_path = "/dataset/duc/duc"
     else:
@@ -181,41 +212,10 @@ def store_score_matrices(index, scores_type, extractive):
                 pickle.dump(scores_matrix, dest_f)
 
 
-# Getting the matrices of documents and reference summaries.
-def get_matrices(index, scores_type, extractive, weights):
-    # Selecting the right path depending on the batch or binary scoring.
-    if index < 0:
-        dataset_path = "/dataset/duc/duc"
-    else:
-        dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
-
-    if extractive:
-        scores_path = dataset_path + "_sent_score_matrix"
-        doc_path = dataset_path + "_doc_sent_matrix.dat"
-        ref_path = dataset_path + "_ref_sent_matrix.dat"
-    else:
-        scores_path = dataset_path + "_score_matrix"
-        doc_path = dataset_path + "_doc_matrix.dat"
-        ref_path = dataset_path + "_ref_matrix.dat"
-
-    if scores_type == "bin":
-        scores_path += str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
-    elif scores_type == "bestN":
-        scores_path += "_bestn.dat"
-    else:
-        scores_path += str(weights[0]) + "-" + str(weights[1]) + ".dat"
-
-    with open(os.getcwd() + doc_path, "rb") as docs_f:
-        doc_matrix = pickle.load(docs_f)
-    with open(os.getcwd() + ref_path, "rb") as refs_f:
-        ref_matrix = pickle.load(refs_f)
-    with open(os.getcwd() + scores_path, "rb") as scores_f:
-        score_matrix = pickle.load(scores_f)
-
-    return doc_matrix, ref_matrix, score_matrix
-
-
 def store_full_sentence_matrices():
+    """
+    Storing matrices for the extractive summarization task.
+    """
     docs, references, _ = get_duc()
 
     docs_no = len(docs)                                   # First dimension, documents number.
@@ -290,3 +290,45 @@ def store_full_sentence_matrices():
         pickle.dump(refs_3d_matrix, dest_f)
     with open(os.getcwd() + doc_path, "wb") as dest_f:
         pickle.dump(docs_3d_matrix, dest_f)
+
+
+def get_matrices(index, scores_type, extractive, weights):
+    """
+    Getting the matrices of documents and reference summaries.
+
+    :param index: represent the batch of compact nyt pas to get or, if -1, it tells to get duc pas lists.
+    :param scores_type: can be "non_bin" "bin" "bestN".
+    :param extractive: whether it is extractive summarization or not.
+    :param weights: a tuple of two weights to average 0/1 clustering and N clusters.
+    :return: the requested documents, reference summaries and scores matrices.
+    """
+    # Selecting the right path depending on the batch or binary scoring.
+    if index < 0:
+        dataset_path = "/dataset/duc/duc"
+    else:
+        dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
+
+    if extractive:
+        scores_path = dataset_path + "_sent_score_matrix"
+        doc_path = dataset_path + "_doc_sent_matrix.dat"
+        ref_path = dataset_path + "_ref_sent_matrix.dat"
+    else:
+        scores_path = dataset_path + "_score_matrix"
+        doc_path = dataset_path + "_doc_matrix.dat"
+        ref_path = dataset_path + "_ref_matrix.dat"
+
+    if scores_type == "bin":
+        scores_path += str(weights[0]) + "-" + str(weights[1]) + "binary.dat"
+    elif scores_type == "bestN":
+        scores_path += "_bestn.dat"
+    else:
+        scores_path += str(weights[0]) + "-" + str(weights[1]) + ".dat"
+
+    with open(os.getcwd() + doc_path, "rb") as docs_f:
+        doc_matrix = pickle.load(docs_f)
+    with open(os.getcwd() + ref_path, "rb") as refs_f:
+        ref_matrix = pickle.load(refs_f)
+    with open(os.getcwd() + scores_path, "rb") as scores_f:
+        score_matrix = pickle.load(scores_f)
+
+    return doc_matrix, ref_matrix, score_matrix

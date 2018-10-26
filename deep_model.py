@@ -8,8 +8,17 @@ from keras.engine.saving import load_model
 from keras.layers import Masking, Bidirectional, LSTM, Lambda, Activation, Dense
 
 
-# Initialize and compile a model for the specific dimensions.
 def build_model(doc_size, vector_size, loss_function, dense_layers, output_activation):
+    """
+    Initialize and compile a model for the specific dimensions.
+
+    :param doc_size: maximum document size (number of sentences).
+    :param vector_size: size of the sentence vector representation.
+    :param loss_function: loss function.
+    :param dense_layers: number of dense layers after the BLSTM.
+    :param output_activation: output activation.
+    :return: compiled model.
+    """
     inputs = Input(shape=(doc_size, vector_size))
     mask = Masking(mask_value=0.0)(inputs)
 
@@ -38,9 +47,21 @@ def build_model(doc_size, vector_size, loss_function, dense_layers, output_activ
     return model
 
 
-# Train a pre-compiled model with the provided inputs.
 def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
                 epochs, batch_size=1, val_size=0, save_model=False):
+    """
+    Train a pre-compiled model with the provided inputs.
+
+    :param model: model to train.
+    :param model_name: name of the model.
+    :param doc_matrix: document matrix.
+    :param score_matrix: score matrix.
+    :param initial_epoch: initial epoch., useful to produce a more significant graph.
+    :param epochs: number of epochs.
+    :param batch_size: batch size.
+    :param val_size: size of the validation set.
+    :param save_model: if True the model will be stored.
+    """
     if val_size > 0:
         set_size = int(doc_matrix.shape[0] - val_size)
     else:
@@ -78,8 +99,13 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
         K.clear_session()
 
 
-# Crops the output(x[0]) based on the input(x[1]) padding.
 def crop(x):
+    """
+    Crops the output(x[0]) based on the input(x[1]) padding.
+
+    :param x: output(x[0]) and input(x[1]) of the model.
+    :return: crop output.
+    """
     dense = x[0]
     inputs = x[1]
     vector_size = 134
@@ -99,7 +125,13 @@ def crop(x):
     return dense * padding
 
 
-# Returns the predicted scores given model name and documents.
 def predict_scores(model_name, docs):
+    """
+    Returns the predicted scores given model name and documents.
+
+    :param model_name: name of the model.
+    :param docs: document matrix.
+    :return: predicted document scores.
+    """
     model = load_model(os.getcwd() + "/models/" + model_name + ".h5")
     return model.predict(docs, batch_size=1)

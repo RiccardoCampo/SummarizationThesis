@@ -9,8 +9,16 @@ from summarization import dataset_rouge_scores_deep, dataset_rouge_scores_extrac
 from utils import get_sources_from_pas_lists
 
 
-# Compute ROUGE score of the specified model using the specified dataset.
 def test(series_name, test_dataset, train_dataset, extractive, weights=None):
+    """
+    Compute ROUGE score of the specified model using the specified dataset.
+
+    :param series_name: name of the model or training series number.
+    :param test_dataset: dataset with which test the model.
+    :param train_dataset: dataset with which the model was trained.
+    :param extractive: whether it is extractive summarization or not.
+    :param weights: a tuple of two weights to average 0/1 clustering and N clusters.
+    """
     # If the weights are not specified all of them are used.
     if weights:
         weights_list = [weights]
@@ -25,11 +33,11 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
         batches = 35
         duc_index = 0       # Used to set the parameter "index" to -1 when using DUC, to get duc matrices and scores.
         training_no = 832   # Includes validation.
-        max_doc_len = 300
+        max_doc_len = 300   # Max size of the matrices in case of nyt dataset.
     else:
-        batches = 0
+        batches = 0         # With duc it will only consider the value -1 (duc matrices using get_matrices).
         duc_index = -1
-        training_no = 422  # Includes validation.
+        training_no = 422
         max_doc_len = 385
 
     for weights in weights_list:
@@ -53,9 +61,9 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
                                                                        dynamic_summ_len=True, batch=index, rem_ds=True)
             else:
                 if test_dataset != train_dataset:
-                    if test_dataset == "duc":  # Test DUC with NYT model.
+                    if test_dataset == "duc":                           # Test DUC with NYT model.
                         doc_matrix = doc_matrix[training_no:, :max_doc_len, :]
-                    else:  # Test NYT with DUC model.
+                    else:                                               # Test NYT with DUC model.
                         extended_doc_matrix = np.zeros((doc_matrix.shape[0], max_doc_len, doc_matrix.shape[2]))
                         extended_doc_matrix[:doc_matrix.shape[0],
                                             :doc_matrix.shape[1], :doc_matrix.shape[2]] = doc_matrix
@@ -77,6 +85,7 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
             recall_list.extend(recall_list_part)
 
+        # Averaging the scores wrt the number of batches.
         for k in rouge_scores.keys():
             rouge_scores[k] /= batches - duc_index  # if duc then /1 else /35
 

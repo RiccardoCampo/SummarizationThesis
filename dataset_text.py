@@ -8,8 +8,13 @@ from pas import extract_pas
 from utils import stem_and_stopword, text_cleanup, tokens, timer
 
 
-# Compute idfs given a document list, storing them in the specified destination file.
 def compute_idfs(doc_list, dest_path):
+    """
+    Compute idfs given a document list, storing them in the specified destination file.
+
+    :param doc_list: list of documents from which terms are extracted.
+    :param dest_path: path in which store the idfs file.
+    """
     docs_number = len(doc_list)
     stems = []
     doc_stems = {}
@@ -44,8 +49,12 @@ def compute_idfs(doc_list, dest_path):
         pickle.dump(idfs, dest_file)
 
 
-# Getting documents and respective summaries from DUC dataset from XML files.
 def get_duc():
+    """
+    Getting documents and respective summaries from DUC dataset from XML files.
+
+    :return: docs list, reference summaries list, doc names list.
+    """
     duc_path = os.getcwd() + "/dataset/duc_source"
     docs = []
     summaries = []
@@ -112,8 +121,10 @@ def get_duc():
     return docs, summaries, doc_names
 
 
-# Load all the DUC documents and summaries, process them and store them.
 def store_pas_duc_dataset():
+    """
+    Load all the DUC documents and summaries, process them and store them.
+    """
     docs_pas_lists = []
     refs_pas_lists = []
 
@@ -144,8 +155,15 @@ def store_pas_duc_dataset():
         pickle.dump(refs_pas_lists, dest_f)
 
 
-# Retrieve New York Times corpus documents and summaries.
 def get_nyt(nyt_path, min_doc=0, max_doc=100):
+    """
+    Retrieve New York Times corpus documents and summaries.
+
+    :param nyt_path: path to nyt raw dataset.
+    :param min_doc: start to get documents from this index.
+    :param max_doc: stop to get documents at this index.
+    :return: docs list, reference summaries list.
+    """
     docs = []
     summaries = []
     count = 0
@@ -187,9 +205,15 @@ def get_nyt(nyt_path, min_doc=0, max_doc=100):
     return docs, summaries
 
 
-# Load NYT documents and summaries, process them and store them.
-# Process a number of documents between min_pas and max_pas.
 def store_pas_nyt_dataset(nyt_path, min_pas, max_pas):
+    """
+    Load NYT documents and summaries, process them and store them.
+    Process a number of documents between min_pas and max_pas.
+
+    :param nyt_path: path to nyt raw dataset.
+    :param min_pas: first document number.
+    :param max_pas: last document number
+    """
     docs_pas_lists = []
     refs_pas_lists = []
 
@@ -223,8 +247,14 @@ def store_pas_nyt_dataset(nyt_path, min_pas, max_pas):
         pickle.dump(docs_pas_lists, dest_f)
 
 
-# Putting pas lists in files of fixed length and without excessively long documents.
 def arrange_nyt_pas_lists(dim=1000, max_len=300, max_file=660000):
+    """
+    Putting pas lists in files of fixed length and without excessively long documents.
+
+    :param dim: number of docs in a file.
+    :param max_len: maximum document length.
+    :param max_file: last document index.
+    """
     end_of_docs = False
     batch = 0
     while not end_of_docs:
@@ -286,9 +316,13 @@ def arrange_nyt_pas_lists(dim=1000, max_len=300, max_file=660000):
         batch += 1
 
 
-# Getting the pas lists of documents and reference summaries. The index represent the batch of compact nyt pas to get.
-# Or, if -1, it tells to get duc pas lists.
 def get_pas_lists(index=-1):
+    """
+    Getting the pas lists of documents and reference summaries.
+
+    :param index: represent the batch of compact nyt pas to get or, if -1, it tells to get duc pas lists.
+    :return: document and summary pas lists.
+    """
     if index < 0:
         with open(os.getcwd() + "/dataset/duc/duc_docs_pas.dat", "rb") as docs_f:
             docs_pas_lists = pickle.load(docs_f)

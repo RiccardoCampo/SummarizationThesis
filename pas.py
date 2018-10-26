@@ -13,11 +13,13 @@ else:
     STANFORD_PATH = "C:/Users/Riccardo/Documents/stanford-parser"
 
 # Initializing the annotator with the specified paths.
-annotator = Annotator(senna_dir=SENNA_PATH, stp_dir=STANFORD_PATH)
+_annotator = Annotator(senna_dir=SENNA_PATH, stp_dir=STANFORD_PATH)
 
 
-# This class contains all the necessary information about a PAS.
 class Pas:
+    """
+    This class contains all the necessary information about a PAS.
+    """
     def __init__(self, sentence, parts_of_speech, position, pas_no, raw_pas, out_of_order):
         # Reference sentence.
         self.sentence = sentence
@@ -48,15 +50,19 @@ class Pas:
                "full sentence: \n" + self.sentence + "\n" + "raw pas: \n" + str(self.raw_pas) + "\n" + \
                "pos: " + "\n" + str(self.parts_of_speech) + "\n"
 
-    # Completing the PAS after the initialization with pas realization and embeddings.
-    def complete_pas(self,
-                     realized_pas,
-                     embeddings,
-                     sentence_no,
-                     longest_sent_len,
-                     tf_idfs,
-                     pas_centrality,
+    def complete_pas(self, realized_pas, embeddings, sentence_no, longest_sent_len, tf_idfs, pas_centrality,
                      title_similarity):
+        """
+        Completing the PAS after the initialization with pas realization and embeddings.
+
+        :param realized_pas: sentence realization of the PAS.
+        :param embeddings: sentence embeddings of the realized pas.
+        :param sentence_no: sentence position in the document.
+        :param longest_sent_len: longest sentence length in the document.
+        :param tf_idfs: tf_idfs of the terms in the document.
+        :param pas_centrality: pas centrality score.
+        :param title_similarity: title similarity score.
+        """
         self.embeddings = embeddings
         self.realized_pas = realized_pas
         position_score = (sentence_no - self.position) / sentence_no
@@ -66,7 +72,7 @@ class Pas:
 
         terms = list(set(stem_and_stopword(" ".join(x for x in self.raw_pas.values()))))
         for term in terms:
-            # Due to errors terms may be not present in the tf_idf dictionary.
+            # Due to errors, terms may be not present in the tf_idf dictionary.
             if term in tf_idfs.keys():
                 tf_idf_score += tf_idfs[term]
             else:
@@ -85,8 +91,13 @@ class Pas:
                        numerical_score / len(self.sentence), pas_centrality, title_similarity]
 
 
-# Produce the sentence realization given a PAS
 def realize_pas(pas):
+    """
+    Produce the sentence realization given a PAS.
+
+    :param pas: PAS to realize.
+    :return: realized PAs.
+    """
     phrase = ""
     raw_pas = pas.raw_pas
 
@@ -129,8 +140,13 @@ def realize_pas(pas):
     return phrase
 
 
-# Fixes the verb by checking on previous verbs/auxiliaries in the original sentence.
 def fix_verb(pas):
+    """
+    Fixes the verb by checking on previous verbs/auxiliaries in the original sentence.
+
+    :param pas: PAS containing the verb to be fixed.
+    :return: fixed verb.
+    """
     raw_pas = pas.raw_pas
     pos = dict(pas.parts_of_speech)
     verb = raw_pas["V"]
@@ -146,8 +162,13 @@ def fix_verb(pas):
         if pos[verb].startswith("VB"):
             verb_prefix = ""
             for i in range(1, 5):
-                if check_prev_verb(words, pos, verb_index - i):
-                    verb_prefix = words[verb_index - i] + " " + verb_prefix
+                if verb_index - i >= 0:
+                    if words[verb_index - i] in pos.keys():
+                        if pos[words[verb_index - i]].startswith("VB") or words[verb_index - i] == "not" or \
+                                words[verb_index - i] == "to":
+                            verb_prefix = words[verb_index - i] + " " + verb_prefix
+                        else:
+                            break
                 else:
                     break
             # Excluding the cases in which the only part added is "to".
@@ -156,17 +177,14 @@ def fix_verb(pas):
     return verb
 
 
-# Check if the previous verb is a verb or "not" or "to".
-def check_prev_verb(words, pos, index):
-    if index >= 0:
-        if words[index] in pos.keys():
-            if pos[words[index]].startswith("VB") or words[index] == "not" or words[index] == "to":
-                return True
-    return False
-
-
-# Extracts the PASs from a list of sentences (dataset name is needed to fetch the proper IDF file).
 def extract_pas(sentences, dataset_name, keep_all=False):
+    """
+    Extracts the PASs from a list of sentences (
+
+    :param sentences: sentences from which to extract PAS.
+    :param dataset_name: name of the dataset needed to fetch the proper IDF file.
+    :param keep_all: if True keeps also the out of order PAS.
+    """
     # Compute the TFIDF vector of all terms in the document.
     tf_idfs = tf_idf(sentences, os.getcwd() + "/dataset/" + dataset_name + "/" + dataset_name + "_idfs.dat")
 
@@ -184,7 +202,7 @@ def extract_pas(sentences, dataset_name, keep_all=False):
             sent = re.sub("\'([a-zA-Z0-9])([a-zA-Z0-9 ]+)([a-zA-Z0-9])\'", r'" \1\2\3 "', sent)
             print(sent)
 
-            annotations = annotator.get_annoations(remove_punct(sent).split())
+            annotations = _annotator.get_annoations(remove_punct(sent).split())
             # Getting SRL annotations from SENNA.
             sent_srl = annotations['srl']
             # Getting POS tags from SENNA.
