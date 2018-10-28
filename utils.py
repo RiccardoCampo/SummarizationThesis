@@ -325,12 +325,17 @@ def resolve_anaphora(sentences):
     ds_mod = 0
 
     for sentence_annotations in annotations.sentence:
-        if len(remove_punct(corenlp.to_text(sentence_annotations))) < 4:
+        if len(remove_punct(corenlp.to_text(sentence_annotations))) < 2:
             ds_mod += 1
             deleted_sentences_modifiers.append(ds_mod)
         else:
             sentences_annotations.append(sentence_annotations)
             deleted_sentences_modifiers.append(ds_mod)
+
+    for i in range(len(sentences)):
+        print("====================================")
+        print(sentences[i])
+        print(corenlp.to_text(sentences_annotations[i]))
 
     sentence_modifiers = [0] * len(sentences)
     for i in range(len(sentences)):
@@ -398,7 +403,7 @@ def resolve_anaphora_pas_list(pas_list):
 
     :param pas_list: pas list.
     """
-    realized_pas_list = [(pas.realized_pas + "..\n").replace(" ..", "..") for pas in pas_list]
+    realized_pas_list = [(pas.realized_pas.replace("...", "").replace("..", "") + "..\n").replace(" ..", "..").replace("...", "..") for pas in pas_list]
     resolved_sentences = resolve_anaphora(realized_pas_list)
 
     for pas in pas_list:

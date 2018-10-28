@@ -115,7 +115,7 @@ if __name__ == "__main__":
         name = str(sys.argv[1])
         tst_set = str(sys.argv[2])
         trn_set = str(sys.argv[3])
-        extr = str(sys.argv[4])
+        extr = bool(int(sys.argv[4]))
         if len(sys.argv) > 5:
             w1 = float(sys.argv[5])
             w2 = float(sys.argv[6])

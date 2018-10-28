@@ -91,7 +91,8 @@ if __name__ == "__main__":
         ep = int(sys.argv[6])               # Epochs.
         sc = int(sys.argv[7])               # Scores: 0 non binary, 1 binary, 2 closest binary.
         dset = str(sys.argv[8])             # Dataset
-        extr = str(sys.argv[9])             # Extractive: 1 if extractive summarization.
+        extr = bool(int(sys.argv[9]))       # Extractive: 1 if extractive summarization.
+        print(extr)
         if len(sys.argv) > 10:
             w1 = float(sys.argv[10])         # Weight 1.
             w2 = float(sys.argv[11])        # Weight 2

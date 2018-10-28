@@ -24,7 +24,7 @@ _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
 docs, _ = get_pas_lists(-1)
 
-for pas_list in docs[13:14]:
+for pas_list in docs[459:]:
     print(docs.index(pas_list))
     resolve_anaphora_pas_list(pas_list)
 
