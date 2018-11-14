@@ -16,7 +16,7 @@ def generate_summary(pas_list, scores, summ_len=100):
     :param summ_len: maximum length of the generated summary.
     :return: string containing the summary.
     """
-    resolve_anaphora_pas_list(pas_list)
+    #resolve_anaphora_pas_list(pas_list)
     pas_no = len(pas_list)
     sorted_scores = [(j, scores[j]) for j in range(len(scores))]
     sorted_scores.sort(key=lambda tup: -tup[1])
