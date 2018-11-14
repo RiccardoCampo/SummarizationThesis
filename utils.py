@@ -18,7 +18,8 @@ stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 embedder = hub.Module("https://tfhub.dev/google/random-nnlm-en-dim128/1")
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-anaphora = corenlp.CoreNLPClient(annotators="coref".split(), timeout=1000000000)
+#anaphora = corenlp.CoreNLPClient(annotators="coref".split(), timeout=1000000000)
+anaphora = None
 
 def text_cleanup(full_text):
     """
