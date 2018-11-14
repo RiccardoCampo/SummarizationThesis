@@ -90,7 +90,7 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
             rouge_scores[k] /= batches - duc_index  # if duc then /1 else /35
 
         # Get validation accuracy histories.
-        with open(os.getcwd() + "/results/histories/" + model_name + "_tst" + test_dataset + ".hst", "rb") as file:
+        with open(os.getcwd() + "/results/histories/" + model_name + ".hst", "rb") as file:
             history = pickle.load(file)
         val_acc = history['val_acc']
 
