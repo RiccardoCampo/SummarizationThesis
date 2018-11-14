@@ -18,7 +18,7 @@ stop_words = set(stopwords.words('english'))
 stemmer = PorterStemmer()
 embedder = hub.Module("https://tfhub.dev/google/random-nnlm-en-dim128/1")
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-
+anaphora = corenlp.CoreNLPClient(annotators="coref".split(), timeout=1000000000)
 
 def text_cleanup(full_text):
     """
@@ -316,18 +316,18 @@ def resolve_anaphora(sentences):
     for sentence in sentences:
         text += sentence + " "
 
-    with corenlp.CoreNLPClient(annotators="coref".split(), timeout=1000000000) as client:
-        annotations = client.annotate(text)
-
+    # with corenlp.CoreNLPClient(annotators="coref".split(), timeout=1000000000) as client:
+        # annotations = client.annotate(text)
+    annotations = anaphora.annotate(text)
     sentences_annotations = []
 
     deleted_sentences_modifiers = []
     ds_mod = 0
 
-    print("==========================================")
-    for sentence_annotations in annotations.sentence:
-        print(corenlp.to_text(sentence_annotations))
-    print("==========================================")
+    # print("==========================================")
+    # for sentence_annotations in annotations.sentence:
+    #     print(corenlp.to_text(sentence_annotations))
+    # print("==========================================")
 
     for sentence_annotations in annotations.sentence:
         if len(remove_punct(corenlp.to_text(sentence_annotations))) < 2:
@@ -338,10 +338,10 @@ def resolve_anaphora(sentences):
             sentences_annotations.append(sentence_annotations)
             deleted_sentences_modifiers.append(ds_mod)
 
-    for i in range(len(sentences)):
-        print("====================================")
-        print(sentences[i])
-        print(corenlp.to_text(sentences_annotations[i]))
+    # for i in range(len(sentences)):
+     #   print("====================================")
+      #  print(sentences[i])
+       # print(corenlp.to_text(sentences_annotations[i]))
 
     sentence_modifiers = [0] * len(sentences)
     for i in range(len(sentences)):
@@ -349,15 +349,15 @@ def resolve_anaphora(sentences):
         if sentence_annotations.hasCorefMentionsAnnotation:
             for mention in sorted(sentence_annotations.mentionsForCoref, key=lambda x:x.startIndex):
                 if mention.mentionType == "PRONOMINAL":
-                    print("-_--_--------_----______-")
-                    print(sentences[i])
-                    print(corenlp.to_text(sentence_annotations))
-                    print(text_structure[i])
-                    print([token.word for token in sentence_annotations.token])
-                    print("-_--_--------_----______-")
+                    # print("-_--_--------_----______-")
+                    # print(sentences[i])
+                    # print(corenlp.to_text(sentence_annotations))
+                    # print(text_structure[i])
+                    # print([token.word for token in sentence_annotations.token])
+                    # print("-_--_--------_----______-")
                     pronoun_id = mention.mentionID
                     # Sentence, Begin, End.
-                    print("pron sent index {}    del mod {}".format(i, deleted_sentences_modifiers[i]))
+                    # print("pron sent index {}    del mod {}".format(i, deleted_sentences_modifiers[i]))
                     pronoun_sent_index = i #- deleted_sentences_modifiers[i]
 
                     tks = list(sentence_annotations.token)
@@ -365,12 +365,12 @@ def resolve_anaphora(sentences):
                     punct_modifier = sum([1 for j in range(len(tks)) if tks[j].word in string.punctuation and
                                           j < mention.startIndex])
 
-                    print(punct_modifier)
-                    print(sentence_modifiers[i])
+                    # print(punct_modifier)
+                    # print(sentence_modifiers[i])
                     pronoun_begin_index = mention.startIndex + sentence_modifiers[i] - punct_modifier
                     pronoun_end_index = mention.endIndex + sentence_modifiers[i] - punct_modifier
-                    print(pronoun_begin_index)
-                    print(pronoun_end_index)
+                    # print(pronoun_begin_index)
+                    # print(pronoun_end_index)
                     pronoun_chains = []
                     for chain in annotations.corefChain:
                         for chain_mention in chain.mention:
@@ -386,15 +386,15 @@ def resolve_anaphora(sentences):
                                                        deleted_sentences_modifiers[chain_mention.sentenceIndex]
                                 reference_begin_index = chain_mention.beginIndex
                                 reference_end_index = chain_mention.endIndex
-                                print("ref sent index {}".format(reference_sent_index))
-                                print("ref begin index {}".format(reference_begin_index))
-                               # print("text struct len {}".format(len(text_structure)))
-                               # print(text_structure[reference_sent_index])
+                                # print("ref sent index {}".format(reference_sent_index))
+                                # print("ref begin index {}".format(reference_begin_index))
+                                # print("text struct len {}".format(len(text_structure)))
+                                # print(text_structure[reference_sent_index])
                                 text_structure[pronoun_sent_index][pronoun_begin_index:pronoun_end_index] = \
                                     text_structure[reference_sent_index][reference_begin_index:reference_end_index]
-                                print(text_structure[pronoun_sent_index][pronoun_begin_index:pronoun_end_index])
-                                print(text_structure[reference_sent_index][reference_begin_index:reference_end_index])
-                                print(text_structure[i])
+                                # print(text_structure[pronoun_sent_index][pronoun_begin_index:pronoun_end_index])
+                                # print(text_structure[reference_sent_index][reference_begin_index:reference_end_index])
+                                # print(text_structure[i])
                                 sentence_modifiers[i] += reference_end_index - reference_begin_index - 1
                                 break
 

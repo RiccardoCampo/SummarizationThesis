@@ -23,7 +23,7 @@ _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
 docs, _ = get_pas_lists(-1)
-#"""
+"""
 for pas_list in docs[494:495]:
     pas_list = pas_list[11:16]
     for pas in pas_list:
@@ -33,9 +33,9 @@ for pas_list in docs[494:495]:
     print("___________________________________________")
     for pas in pas_list:
         print(pas.realized_pas)
-#"""
-
 """
+
+#"""
 text = '"The nomination of John Tower to be secretary of defense is not confirmed Quayle intoned after the vote.\n' \
        'Nancy Kassebaum provided the biggest surprise of the final hours of debate when she became the sole ' \
        'Republican to declare her opposition.\n' \
@@ -43,10 +43,15 @@ text = '"The nomination of John Tower to be secretary of defense is not confirme
         'the sole Republican declare her opposition.\n' \
         'She said her "most serious concerns"' \
        "were over Tower's activities as a defense consultant after serving as an arms control negotiator.\n"
+text = "It is not that we have a short space of time, but that we waste much of it"
 print(text)
 for sent in resolve_anaphora(tokens(text)):
     print(sent)
-"""
+
+print(text)
+for sent in resolve_anaphora(tokens(text)):
+    print(sent)
+#"""
 
 """   MASS TRAINING
 
