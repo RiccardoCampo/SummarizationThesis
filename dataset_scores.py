@@ -294,11 +294,13 @@ def store_full_sentence_matrices(index):
                                                          tf_idf_score, numerical_score,
                                                          centrality_score, title_sim_score], embeddings[j])
 
-    # Storing the matrices in the appropriate file, depending on the scoring system.
-    with open(os.getcwd() + ref_path, "wb") as dest_f:
-        pickle.dump(refs_3d_matrix, dest_f)
-    with open(os.getcwd() + doc_path, "wb") as dest_f:
-        pickle.dump(docs_3d_matrix, dest_f)
+        # Storing the matrices in the appropriate file, depending on the scoring system.
+        if k == 0:
+            with open(os.getcwd() + doc_path, "wb") as dest_f:
+                pickle.dump(docs_3d_matrix, dest_f)
+        else:
+            with open(os.getcwd() + ref_path, "wb") as dest_f:
+                pickle.dump(refs_3d_matrix, dest_f)
 
 
 def get_matrices(index, scores_type, extractive, weights):
