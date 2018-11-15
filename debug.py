@@ -9,6 +9,7 @@ import numpy as np
 import logging
 import keras
 
+from dataset_scores import store_full_sentence_matrices, store_score_matrices
 from dataset_text import get_duc, get_nyt, \
     store_pas_nyt_dataset, compute_idfs, get_pas_lists, arrange_nyt_pas_lists
 from loss_testing import summary_clustering_score, summary_clustering_score_2
@@ -22,8 +23,17 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-docs, _ = get_pas_lists(-1)
+
+for i in range(0, 35):
+    print("matrices {}".format(i))
+    store_full_sentence_matrices(i)
+    for scores in ("non_bin", "bin", "bestN"):
+        print("scores: {} {}".format(i, scores))
+        store_score_matrices(i, scores, True)
+
+
 """
+docs, _ = get_pas_lists(-1)
 for pas_list in docs[494:495]:
     pas_list = pas_list[11:16]
     for pas in pas_list:
@@ -35,7 +45,7 @@ for pas_list in docs[494:495]:
         print(pas.realized_pas)
 """
 
-#"""
+"""
 text = '"The nomination of John Tower to be secretary of defense is not confirmed Quayle intoned after the vote.\n' \
        'Nancy Kassebaum provided the biggest surprise of the final hours of debate when she became the sole ' \
        'Republican to declare her opposition.\n' \
@@ -51,7 +61,7 @@ for sent in resolve_anaphora(tokens(text)):
 print(text)
 for sent in resolve_anaphora(tokens(text)):
     print(sent)
-#"""
+"""
 
 """   MASS TRAINING
 

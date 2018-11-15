@@ -5,7 +5,8 @@ import numpy as np
 from numpy.linalg import norm
 from sklearn.cluster import KMeans
 from dataset_text import get_pas_lists, get_duc
-from utils import text_cleanup, tokens, sentence_embeddings, centrality_scores, tf_idf, stem_and_stopword
+from utils import text_cleanup, tokens, sentence_embeddings, centrality_scores, tf_idf, stem_and_stopword, \
+    get_sources_from_pas_lists
 
 
 def score_document(doc_vectors, ref_vectors, weights, binary):
@@ -212,11 +213,22 @@ def store_score_matrices(index, scores_type, extractive):
                 pickle.dump(scores_matrix, dest_f)
 
 
-def store_full_sentence_matrices():
+def store_full_sentence_matrices(index):
     """
     Storing matrices for the extractive summarization task.
     """
-    docs, references, _ = get_duc()
+    if index < 0:
+        docs, references, _ = get_duc()
+        max_sent_no = 200
+        doc_path = "/dataset/duc/duc_doc_sent_matrix.dat"
+        ref_path = "/dataset/duc/duc_ref_sent_matrix.dat"
+    else:
+        docs_pas_lists, refs_pas_lists = get_pas_lists(index)
+        docs = get_sources_from_pas_lists(docs_pas_lists)
+        references = get_sources_from_pas_lists(refs_pas_lists)
+        dataset_path = "/dataset/nyt/" + str(index) + "/nyt" + str(index)
+        doc_path = dataset_path + "_doc_sent_matrix.dat"
+        ref_path = dataset_path + "_ref_sent_matrix.dat"
 
     docs_no = len(docs)                                   # First dimension, documents number.
     # Second dimension, max document length (sparse), fixed in case of nyt.
@@ -283,9 +295,6 @@ def store_full_sentence_matrices():
                                                          centrality_score, title_sim_score], embeddings[j])
 
     # Storing the matrices in the appropriate file, depending on the scoring system.
-    doc_path = "/dataset/duc/duc_doc_sent_matrix.dat"
-    ref_path = "/dataset/duc/duc_ref_sent_matrix.dat"
-
     with open(os.getcwd() + ref_path, "wb") as dest_f:
         pickle.dump(refs_3d_matrix, dest_f)
     with open(os.getcwd() + doc_path, "wb") as dest_f:
