@@ -24,9 +24,10 @@ _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
 
-for i in range(1, 35):
+for i in range(1, 2):
     print("matrices {}".format(i))
-    store_full_sentence_matrices(i)
+    #store_full_sentence_matrices(i, False)
+    store_full_sentence_matrices(i, True)
     for scores in ("non_bin", "bin", "bestN"):
         print("scores: {} {}".format(i, scores))
         store_score_matrices(i, scores, True)

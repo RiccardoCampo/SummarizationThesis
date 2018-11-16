@@ -213,7 +213,7 @@ def store_score_matrices(index, scores_type, extractive):
                 pickle.dump(scores_matrix, dest_f)
 
 
-def store_full_sentence_matrices(index):
+def store_full_sentence_matrices(index, ref):
     """
     Storing matrices for the extractive summarization task.
     """
@@ -241,66 +241,65 @@ def store_full_sentence_matrices(index):
     docs_3d_matrix = np.zeros((docs_no, max_sent_no, sent_vec_len))
 
     # For each document the pas_list is extracted after cleaning the text and tokenizing it.
-    for k in range(2):
-        if k == 0:
-            doc_list = docs
-        else:
-            doc_list = references
+    if ref:
+        doc_list = references
+    else:
+        doc_list = docs
 
-        for i in range(len(doc_list)):
-            doc = doc_list[i]
-            print("Processing doc " + str(i) + "/" + str(len(docs)))
-            doc = text_cleanup(doc)
-            # Splitting sentences (by dot).
-            sentences = tokens(doc)
-            embeddings = sentence_embeddings(sentences)
-            centr_scores = centrality_scores(embeddings)
-            tf_idfs = tf_idf(sentences, os.getcwd() + "/dataset/duc/duc_idfs.dat")
-            # Position score, reference sentence length score, tf_idf, numerical data, centrality, title.
-            for j in range(len(sentences)):
-                sent = sentences[j]
+    for i in range(len(doc_list)):
+        doc = doc_list[i]
+        print("Processing doc " + str(i) + "/" + str(len(docs)))
+        doc = text_cleanup(doc)
+        # Splitting sentences (by dot).
+        sentences = tokens(doc)
+        embeddings = sentence_embeddings(sentences)
+        centr_scores = centrality_scores(embeddings)
+        tf_idfs = tf_idf(sentences, os.getcwd() + "/dataset/duc/duc_idfs.dat")
+        # Position score, reference sentence length score, tf_idf, numerical data, centrality, title.
+        for j in range(len(sentences)):
+            sent = sentences[j]
 
-                position_score = (len(sentences) - j) / len(sentences)
-                length_score = len(sent) / max(len(snt) for snt in sentences)
+            position_score = (len(sentences) - j) / len(sentences)
+            length_score = len(sent) / max(len(snt) for snt in sentences)
+            tf_idf_score = 0
+            numerical_score = 0
+            centrality_score = centr_scores[j]
+            title_sim_score = np.inner(np.array(embeddings[j]), np.array(embeddings[-1]))
+
+            # Computing centrality and tf_idf score.
+            terms = list(set(stem_and_stopword(sent)))
+            for term in terms:
+                # Due to errors terms may be not present in the tf_idf dictionary.
+                if term in tf_idfs.keys():
+                    tf_idf_score += tf_idfs[term]
+                else:
+                    tf_idf_score += 0
+
+                if term.isdigit():
+                    numerical_score += 1
+
+            # Some errors in the preprocessing may lead to zero terms, so it is necessary to avoid division by zero.
+            if len(terms):
+                tf_idf_score /= len(terms)
+            else:
                 tf_idf_score = 0
-                numerical_score = 0
-                centrality_score = centr_scores[j]
-                title_sim_score = np.inner(np.array(embeddings[j]), np.array(embeddings[-1]))
 
-                # Computing centrality and tf_idf score.
-                terms = list(set(stem_and_stopword(sent)))
-                for term in terms:
-                    # Due to errors terms may be not present in the tf_idf dictionary.
-                    if term in tf_idfs.keys():
-                        tf_idf_score += tf_idfs[term]
-                    else:
-                        tf_idf_score += 0
+            if ref:
+                refs_3d_matrix[i, j, :] = np.append([position_score, length_score,
+                                                     tf_idf_score, numerical_score,
+                                                     centrality_score, title_sim_score], embeddings[j])
+            else:
+                docs_3d_matrix[i, j, :] = np.append([position_score, length_score,
+                                                     tf_idf_score, numerical_score,
+                                                     centrality_score, title_sim_score], embeddings[j])
 
-                    if term.isdigit():
-                        numerical_score += 1
-
-                # Some errors in the preprocessing may lead to zero terms, so it is necessary to avoid division by zero.
-                if len(terms):
-                    tf_idf_score /= len(terms)
-                else:
-                    tf_idf_score = 0
-
-                if k == 0:
-                    docs_3d_matrix[i, j, :] = np.append([position_score, length_score,
-                                                         tf_idf_score, numerical_score,
-                                                         centrality_score, title_sim_score], embeddings[j])
-                else:
-                    refs_3d_matrix[i, j, :] = np.append([position_score, length_score,
-                                                         tf_idf_score, numerical_score,
-                                                         centrality_score, title_sim_score], embeddings[j])
-
-        # Storing the matrices in the appropriate file, depending on the scoring system.
-        if k == 0:
-            with open(os.getcwd() + doc_path, "wb") as dest_f:
-                pickle.dump(docs_3d_matrix, dest_f)
-        else:
-            with open(os.getcwd() + ref_path, "wb") as dest_f:
-                pickle.dump(refs_3d_matrix, dest_f)
+    # Storing the matrices in the appropriate file, depending on the scoring system.
+    if ref:
+        with open(os.getcwd() + ref_path, "wb") as dest_f:
+            pickle.dump(refs_3d_matrix, dest_f)
+    else:
+        with open(os.getcwd() + doc_path, "wb") as dest_f:
+            pickle.dump(docs_3d_matrix, dest_f)
 
 
 def get_matrices(index, scores_type, extractive, weights):
