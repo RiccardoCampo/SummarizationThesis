@@ -280,7 +280,7 @@ def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch
 
 def direct_speech_ratio(sentences):
     """
-    Compute the ratio between direct speech in the text and the whole text (given a pas list).
+    Compute the ratio between direct speech in the text and the whole text.
 
     :param sentences: list of sentences.
     :return: direct speech ratio of the document.
