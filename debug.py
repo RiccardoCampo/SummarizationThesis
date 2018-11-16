@@ -15,7 +15,7 @@ from dataset_text import get_duc, get_nyt, \
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
 from summarization import best_pas, generate_summary, \
-    predict_scores, generate_extract_summary, document_rouge_scores
+    predict_scores, generate_extract_summary, document_rouge_scores, dataset_rouge_scores_weighted
 from train import train
 from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio, timer, tokens, \
     resolve_anaphora, resolve_anaphora_pas_list
@@ -23,7 +23,7 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-#"""
+"""
 for i in range(2, 32):
     print("matrices {}".format(i))
     store_full_sentence_matrices(i, False)
@@ -31,29 +31,41 @@ for i in range(2, 32):
     for scores in ("non_bin", "bin", "bestN"):
         print("scores: {} {}".format(i, scores))
         store_score_matrices(i, scores, True)
-#"""
+"""
 
-"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
-weights_list = [#[1.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-                #[0.0, 0.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
-                #[0.2, 0.1, 0.3, 0.1, 0.1, 0.2], 
-                [0.3, 0.05, 0.3, 0.1, 0.05, 0.2], 
-                #[0.1, 0.05, 0.3, 0.1, 0.15, 0.2]
+#"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
+weights_list = [  [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                #  [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+                # [0.0, 0.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+                # [0.2, 0.1, 0.3, 0.1, 0.1, 0.2],
+                #[0.3, 0.05, 0.3, 0.1, 0.05, 0.2],
+                # [0.1, 0.05, 0.3, 0.1, 0.15, 0.2]
                 ]
 
-batches = 6
-training_no = 666
+duc_dataset = False
+ds_threshold = 1.15
+
+if duc_dataset:
+    training_no = 422
+    batches = 0
+    duc_index = -1
+    dataset = "DUC"
+else:
+    training_no = 832  # includes validation.
+    batches = 35
+    duc_index = 0
+    dataset = "NYT"
 
 rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                 "rouge_2_precision": 0, "rouge_2_f_score": 0}
 
 
 for weights in weights_list:
-    for index in range(batches):
-        docs_pas_lists, refs_pas_lists = get_nyt_pas_lists(index=index)
-        refs = get_refs_from_pas(refs_pas_lists[training_no:])
+    for index in range(duc_index, batches):
+        docs_pas_lists, refs_pas_lists = get_pas_lists(index)
+        refs = get_sources_from_pas_lists(refs_pas_lists[training_no:])
 
-        score = testing_weighted(docs_pas_lists[training_no:], refs, weights)
+        score = dataset_rouge_scores_weighted(docs_pas_lists[training_no:], refs, weights)
         rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
         rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
         rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
@@ -62,17 +74,17 @@ for weights in weights_list:
         rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
 
     for k in rouge_scores.keys():
-        rouge_scores[k] /= batches
+        rouge_scores[k] /= batches - duc_index
 
-    with open(_result_path_, "a") as res_file:
-        print(weights, file=res_file)
+    with open(os.getcwd() + "/results/results.txt", "a") as res_file:
+        print(dataset + " ds " + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-"""
+#"""
 
 """        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
-duc_dataset = True
-ds_threshold = 0.15
+duc_dataset = False
+ds_threshold = 1
 
 weights_list = [(0.0, 1.0),
                 #(0.1, 0.9),
@@ -101,9 +113,7 @@ for weights in weights_list:
         doc_matrix, ref_matrix, score_matrix = get_matrices(k, "bestN", 0, weights)
         docs_pas_lists, refs_pas_lists = get_pas_lists(k)
         refs = get_sources_from_pas_lists(refs_pas_lists)
-        # docs = get_sources_from_pas_lists(docs_pas_lists)
-        docs = [pas.realized_pas for pas in docs_pas_lists]
-        # docs, refs, _ = get_duc()
+        docs = get_sources_from_pas_lists(docs_pas_lists)
 
         if k == 34:
             training_no = 685
@@ -156,7 +166,7 @@ for weights in weights_list:
         rouge_scores[k] /= docs_no
 
     with open(os.getcwd() + "/results/results.txt", "a") as res_file:
-        print("maximum score DUC ds bestN" + str(weights), file=res_file)
+        print("maximum score NYT ds bestN" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
 """
