@@ -13,5 +13,6 @@ def matrices(ref, batch):
 
 
 if __name__ == "__main__":
-    type = bool(int(sys.argv[1]))
+    ref = bool(int(sys.argv[1]))
     batch = int(sys.argv[2])
+    matrices(ref, batch)
