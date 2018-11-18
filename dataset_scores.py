@@ -171,6 +171,9 @@ def store_score_matrices(index, scores_type, extractive):
     # Storing the scores in the appropriate file, depending on the scoring system.
     doc_path = dataset_path + "_doc_matrix.dat"
     ref_path = dataset_path + "_ref_matrix.dat"
+    if extractive:
+        doc_path = dataset_path + "_doc_sent_matrix.dat"
+        ref_path = dataset_path + "_ref_sent_matrix.dat"
 
     with open(os.getcwd() + ref_path, "rb") as dest_f:
         refs_3d_matrix = pickle.load(dest_f)
@@ -219,7 +222,6 @@ def store_full_sentence_matrices(index, ref):
     """
     if index < 0:
         docs, references, _ = get_duc()
-        max_sent_no = 200
         doc_path = "/dataset/duc/duc_doc_sent_matrix.dat"
         ref_path = "/dataset/duc/duc_ref_sent_matrix.dat"
     else:
