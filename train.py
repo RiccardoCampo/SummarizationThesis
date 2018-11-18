@@ -40,9 +40,10 @@ def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores_t
         train_size = 372
         val_size = 50
         doc_size = 385
-        if extractive:
-            doc_size = 200
         duc_index = -1
+
+    if extractive:
+        doc_size = 200
 
     vector_size = 134
 

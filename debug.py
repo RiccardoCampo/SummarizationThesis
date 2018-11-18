@@ -15,10 +15,11 @@ from dataset_text import get_duc, get_nyt, \
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
 from summarization import best_pas, generate_summary, \
-    predict_scores, generate_extract_summary, document_rouge_scores, dataset_rouge_scores_weighted
+    predict_scores, generate_extract_summary, document_rouge_scores, dataset_rouge_scores_weighted, \
+    dataset_rouge_scores_weighted_extractive
 from train import train
 from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summaries, direct_speech_ratio, timer, tokens, \
-    resolve_anaphora, resolve_anaphora_pas_list
+    resolve_anaphora, resolve_anaphora_pas_list, direct_speech_ratio_pas
 
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
@@ -33,16 +34,17 @@ for i in range(2, 32):
         store_score_matrices(i, scores, True)
 """
 
-#"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
-weights_list = [  [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
+weights_list = [ # [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 #  [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
                 # [0.0, 0.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
                 # [0.2, 0.1, 0.3, 0.1, 0.1, 0.2],
-                #[0.3, 0.05, 0.3, 0.1, 0.05, 0.2],
+                [0.3, 0.05, 0.3, 0.1, 0.05, 0.2],
                 # [0.1, 0.05, 0.3, 0.1, 0.15, 0.2]
                 ]
 
 duc_dataset = False
+extractive = False
 ds_threshold = 1.15
 
 if duc_dataset:
@@ -62,10 +64,21 @@ rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 
 
 for weights in weights_list:
     for index in range(duc_index, batches):
+        if index == 34:
+            training_no = 685
+
         docs_pas_lists, refs_pas_lists = get_pas_lists(index)
         refs = get_sources_from_pas_lists(refs_pas_lists[training_no:])
 
-        score = dataset_rouge_scores_weighted(docs_pas_lists[training_no:], refs, weights)
+        if extractive:
+            docs_sent_lists = [[pas.sentence for pas in pas_list] for pas_list in docs_pas_lists]
+            sent_matrix, _, _ = get_matrices(index, "bin", True, (0.3, 0.7))
+            scores_lists = sent_matrix[training_no:, :, :6]
+            score = dataset_rouge_scores_weighted_extractive(docs_pas_lists, scores_lists, refs, weights)
+        else:
+            docs_pas_lists = docs_pas_lists[training_no:]
+            score = dataset_rouge_scores_weighted(docs_pas_lists, refs, weights)
+
         rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
         rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
         rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
@@ -77,14 +90,78 @@ for weights in weights_list:
         rouge_scores[k] /= batches - duc_index
 
     with open(os.getcwd() + "/results/results.txt", "a") as res_file:
-        print(dataset + " ds " + str(weights), file=res_file)
+        print(dataset + " w no ds " + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-#"""
+"""
 
-"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
+
+""" CHECKING DIRECT SPEECH
+dataset_len = 0
+ds_indices = []
+
+duc = False
+if duc:
+    duc_index = -1
+    batches = 0
+    training_no = 422
+else:
+    duc_index = 0
+    batches = 2
+    training_no = 832
+
+for index in range(duc_index, batches):
+    if index == 34:
+        training_no = 685
+    print("Processing batch: " + str(index))
+    docs_pas_lists, _ = get_pas_lists(index=index)
+    docs_pas_lists = docs_pas_lists[training_no:]
+    #docs = get_sources_from_pas_lists(docs_pas_lists)
+
+    for pas_list in docs_pas_lists:
+        doc_index = docs_pas_lists.index(pas_list)
+        print("batch {}. processing doc {}/{}".format(index, doc_index, len(docs_pas_lists)))
+        size = 0
+        ds_size = 0
+        used_sentences = []
+
+        if direct_speech_ratio_pas(pas_list) > 0.15:
+            ds_indices.append(doc_index)
+    dataset_len += len(docs_pas_lists)
+
+print(len(ds_indices) / dataset_len)
+"""
+
+"""        SUMM RATIO
+
+doc_len = 0
+summ_len = 0
+duc = False
+
+if duc:
+    duc_index = -1
+    batches = 0
+else:
+    duc_index = 0
+    batches = 35
+
+for index in range(duc_index, batches):
+    print("Processing batch: " + str(index))
+    docs_pas_lists, refs_pas_lists = get_pas_lists(index=index)
+    docs = get_sources_from_pas_lists(docs_pas_lists)
+    refs = get_sources_from_pas_lists(refs_pas_lists)
+
+    for doc in docs:
+        doc_len += len(doc.split())
+    for ref in refs:
+        summ_len += len(ref.split())
+
+print((doc_len - summ_len) / doc_len)
+
+"""
+#"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
 duc_dataset = False
-ds_threshold = 1
+ds_threshold = 0.15
 
 weights_list = [(0.0, 1.0),
                 #(0.1, 0.9),
@@ -113,7 +190,6 @@ for weights in weights_list:
         doc_matrix, ref_matrix, score_matrix = get_matrices(k, "bestN", 0, weights)
         docs_pas_lists, refs_pas_lists = get_pas_lists(k)
         refs = get_sources_from_pas_lists(refs_pas_lists)
-        docs = get_sources_from_pas_lists(docs_pas_lists)
 
         if k == 34:
             training_no = 685
@@ -122,7 +198,6 @@ for weights in weights_list:
         doc_matrix = doc_matrix[training_no:, :, :]
         score_matrix = score_matrix[training_no:, :]
         refs = refs[training_no:]
-        docs = docs[training_no:]
 
         recall_scores_list = []
         summaries = []
@@ -130,7 +205,7 @@ for weights in weights_list:
         max_sent_no = doc_matrix.shape[1]
 
         for i in range(len(docs_pas_lists)):
-            if direct_speech_ratio(tokens(docs[i])) < ds_threshold:
+            if direct_speech_ratio_pas(docs_pas_lists[i]) < ds_threshold:
                 docs_no += 1
                 pas_list = docs_pas_lists[i]
                 pas_no = len(pas_list)
@@ -169,7 +244,7 @@ for weights in weights_list:
         print("maximum score NYT ds bestN" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-"""
+#"""
 
 
 """
@@ -250,62 +325,6 @@ print(model.predict([[[[0, 1], [3, 2], [1, 5], [0, 0]]]]))
 train_model(model, "loss_test", doc_mat, score_mat, 0, 1, val_size=1)
 
 print(model.predict([[[[0, 1], [3, 2], [1, 5], [0, 0]]]]))
-"""
-
-""" CHECKING DIRECT SPEECH
-dataset_len = 0
-ds_indices = []
-
-duc = False
-if duc:
-    duc_index = -1
-    batches = 0
-else:
-    duc_index = 0
-    batches = 35
-
-for index in range(duc_index, batches):
-    print("Processing batch: " + str(index))
-    docs_pas_lists, refs_pas_lists = get_pas_lists(index=index)
-
-    for pas_list in docs_pas_lists:
-        size = 0
-        ds_size = 0
-        used_sentences = []
-
-        if direct_speech_ratio(pas_list) > 0.2:
-            ds_indices.append(docs_pas_lists.index(pas_list))
-    dataset_len += len(docs_pas_lists)
-
-print(len(ds_indices) / dataset_len)
-"""
-
-"""        SUMM RATIO
-
-doc_len = 0
-summ_len = 0
-duc = False
-
-if duc:
-    duc_index = -1
-    batches = 0
-else:
-    duc_index = 0
-    batches = 35
-
-for index in range(duc_index, batches):
-    print("Processing batch: " + str(index))
-    docs_pas_lists, refs_pas_lists = get_pas_lists(index=index)
-    docs = get_sources_from_pas_lists(docs_pas_lists)
-    refs = get_sources_from_pas_lists(refs_pas_lists)
-
-    for doc in docs:
-        doc_len += len(doc.split())
-    for ref in refs:
-        summ_len += len(ref.split())
-
-print((doc_len - summ_len) / doc_len)
-
 """
 
 """  SUMMARIES CHECK

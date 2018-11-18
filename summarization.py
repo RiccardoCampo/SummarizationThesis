@@ -1,10 +1,13 @@
 import os
+import random
+
 import numpy as np
 
 from pyrouge import Rouge155
 from deep_model import predict_scores
 from utils import sample_summaries, direct_speech_ratio, get_sources_from_pas_lists, tokens, text_cleanup, \
-    resolve_anaphora_pas_list, sentence_embeddings, centrality_scores, tf_idf, stem_and_stopword
+    resolve_anaphora_pas_list, sentence_embeddings, centrality_scores, tf_idf, stem_and_stopword, \
+    direct_speech_ratio_pas
 
 
 def generate_summary(pas_list, scores, summ_len=100):
@@ -186,7 +189,7 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
 
     # Computing the score for each document than compute the average.
     for i in range(len(docs_pas_lists)):
-        if direct_speech_ratio(docs[i]) < 0.15 or not rem_ds:
+        if direct_speech_ratio(tokens(docs[i])) < 0.15 or not rem_ds:
             print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
             pas_no = len(docs_pas_lists[i])
 
@@ -281,7 +284,7 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
     return rouge_scores, recall_score_list
 
 
-def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, summ_len=100):
+def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, ds_threshold=0.15, summ_len=100):
     """
     Computing rouge scores with the weighted method.
 
@@ -291,15 +294,21 @@ def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, summ_len=100):
     :param summ_len: maximum length of the generated summary.
     :return: rouge scores.
     """
+
     rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
                     "rouge_2_precision": 0, "rouge_2_f_score": 0}
-    docs = get_sources_from_pas_lists(docs_pas_lists)
     docs_no = 0
     # Same operations as for the previous function except that the scores are computed by multiplying the features by
     # the weights.
+    ds = 0
     for pas_list in docs_pas_lists:
-        if direct_speech_ratio(tokens(docs[docs_pas_lists.index(pas_list)])) < 0.15:
+        #weights = [random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1),
+         #          random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)]
+        #print(weights)
+        #weights = np.random.dirichlet(np.ones(6),size=1)[0]
+        if direct_speech_ratio_pas(pas_list) < ds_threshold:
             scores = [np.array(pas.vector).dot(np.array(weights)) for pas in pas_list]
+            #scores = np.random.randint(0,1000,len(pas_list))
             summary = generate_summary(pas_list, scores, summ_len=summ_len)
 
             score = document_rouge_scores(summary, refs[docs_pas_lists.index(pas_list)])
@@ -310,13 +319,18 @@ def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, summ_len=100):
             rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
             docs_no += 1
+        else:
+            ds += 1
+
+    print("ds: ")
+    print(ds)
 
     for k in rouge_scores.keys():
         rouge_scores[k] /= docs_no
     return rouge_scores
 
 
-def dataset_rouge_scores_weighted_extractive(docs_sent_lists, refs, weights, summ_len=100):
+def dataset_rouge_scores_weighted_extractive(docs_sent_lists, scores_lists, refs, weights, summ_len=100):
     """
     Computing rouge scores with the weighted method.
 
@@ -332,46 +346,12 @@ def dataset_rouge_scores_weighted_extractive(docs_sent_lists, refs, weights, sum
     # Same operations as for the previous function except that the scores are computed by multiplying the features by
     # the weights.
     for sentences in docs_sent_lists:
+        sent_index = docs_sent_lists.index(sentences)
         if direct_speech_ratio(sentences) < 0.15:
-            scores = []
-            embeddings = sentence_embeddings(sentences)
-            centr_scores = centrality_scores(embeddings)
-            tf_idfs = tf_idf(sentences, os.getcwd() + "/dataset/duc/duc_idfs.dat")
-            # Position score, reference sentence length score, tf_idf, numerical data, centrality, title.
-            for j in range(len(sentences)):
-                sent = sentences[j]
-
-                position_score = (len(sentences) - j) / len(sentences)
-                length_score = len(sent) / max(len(snt) for snt in sentences)
-                tf_idf_score = 0
-                numerical_score = 0
-                centrality_score = centr_scores[j]
-                title_sim_score = np.inner(np.array(embeddings[j]), np.array(embeddings[-1]))
-
-                # Computing centrality and tf_idf score.
-                terms = list(set(stem_and_stopword(sent)))
-                for term in terms:
-                    # Due to errors terms may be not present in the tf_idf dictionary.
-                    if term in tf_idfs.keys():
-                        tf_idf_score += tf_idfs[term]
-                    else:
-                        tf_idf_score += 0
-
-                    if term.isdigit():
-                        numerical_score += 1
-
-                # Some errors in the preprocessing may lead to zero terms, so it is necessary to avoid division by zero.
-                if len(terms):
-                    tf_idf_score /= len(terms)
-                else:
-                    tf_idf_score = 0
-
-                scores.append(np.array([position_score, length_score,
-                                        tf_idf_score, numerical_score,
-                                        centrality_score, title_sim_score]).dot(np.array(weights)))
+            scores = [scores.dot(np.array(weights)) for scores in scores_lists[sent_index]]
             summary = generate_extract_summary(sentences, scores, summ_len=summ_len)
 
-            score = document_rouge_scores(summary, refs[docs_sent_lists.index(sentences)])
+            score = document_rouge_scores(summary, refs[sent_index])
             rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
             rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
             rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]

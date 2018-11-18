@@ -213,7 +213,7 @@ def get_sources_from_pas_lists(pas_lists, dots=True):
 
     :param pas_lists: list of pas list.
     :param dots: if True add dots at the end of each sentence.
-    :return: list of source sentences.
+    :return: list of source documents.
     """
     sources = []
     for pas_list in pas_lists:
@@ -234,7 +234,7 @@ def get_sources_from_pas_lists(pas_lists, dots=True):
     return sources
 
 
-def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch=-1):
+def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch=-1, all=False):
     """
     Print some relevant summaries from a batch of texts.
 
@@ -266,6 +266,10 @@ def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch
         if batch > -1:
             print("FROM BATCH: " + str(batch), file=dest_f)
 
+        if all:
+            indices = range(len(recall_score_list))
+            labels = [""] * len(recall_score_list)
+
         for i in range(len(indices)):
             print(labels[i] + " DOCUMENT (index: " + str(indices[i]) + "): ", file=dest_f)
             print("ROUGE 1 RECALL: " + str(recall_score_list[indices[i]]), file=dest_f)
@@ -289,6 +293,33 @@ def direct_speech_ratio(sentences):
     ds_size = 0
     used_sentences = []
     for sentence in sentences:
+        if sentence not in used_sentences:
+            used_sentences.append(sentence)
+
+            trimmed_sentence = re.sub(
+                '([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)', r'\1 \3', sentence)
+            trimmed_sentence = re.sub('\"([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)', r'\2', trimmed_sentence)
+            trimmed_sentence = re.sub('([a-zA-Z0-9 .,:;\'_\-]+)\"([a-zA-Z0-9 .,:;\'_\-]+)\"', r'\1', trimmed_sentence)
+            trimmed_sentence = re.sub('\"([a-zA-Z0-9 .,:;\'_\-]+)\"', '', trimmed_sentence)
+
+            size += len(sentence)
+            ds_size += len(sentence) - len(trimmed_sentence)
+
+    return ds_size / size
+
+
+def direct_speech_ratio_pas(pas_list):
+    """
+    Compute the ratio between direct speech in the text and the whole text.
+
+    :param sentences: list of sentences.
+    :return: direct speech ratio of the document.
+    """
+    size = 0
+    ds_size = 0
+    used_sentences = []
+    for pas in pas_list:
+        sentence = pas.sentence
         if sentence not in used_sentences:
             used_sentences.append(sentence)
 
