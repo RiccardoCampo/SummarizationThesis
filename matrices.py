@@ -5,7 +5,7 @@ from dataset_scores import store_full_sentence_matrices, store_score_matrices
 
 def matrices(ref, batch):
     print("matrices {}".format(batch))
-    #store_full_sentence_matrices(batch, ref)
+    store_full_sentence_matrices(batch, ref)
     if ref:
         for scores in ("non_bin", "bin", "bestN"):
             print("scores: {} {}".format(batch, scores))

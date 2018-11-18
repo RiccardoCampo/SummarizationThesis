@@ -24,15 +24,13 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-"""
-for i in range(2, 32):
+#"""
+for i in range(0, 35):
     print("matrices {}".format(i))
-    store_full_sentence_matrices(i, False)
-    store_full_sentence_matrices(i, True)
     for scores in ("non_bin", "bin", "bestN"):
         print("scores: {} {}".format(i, scores))
         store_score_matrices(i, scores, True)
-"""
+#"""
 
 """     TESTING WEIGHTED PAS METHOD (SIMPLE)
 weights_list = [ # [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -159,7 +157,7 @@ for index in range(duc_index, batches):
 print((doc_len - summ_len) / doc_len)
 
 """
-#"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
+"""        COMPUTING MAXIMUM SCORES (PER SCORING METHOD)
 duc_dataset = False
 ds_threshold = 0.15
 
@@ -244,7 +242,7 @@ for weights in weights_list:
         print("maximum score NYT ds bestN" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-#"""
+"""
 
 
 """
