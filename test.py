@@ -36,12 +36,10 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
         batches = 35
         duc_index = 0       # Used to set the parameter "index" to -1 when using DUC, to get duc matrices and scores.
         training_no = 832       # Includes validation.
-        max_doc_len = nyt_max_len   # Max size of the matrices in case of nyt dataset.
     else:
         batches = 0         # With duc it will only consider the value -1 (duc matrices using get_matrices).
         duc_index = -1
         training_no = 422
-        max_doc_len = duc_max_len
 
     for weights in weights_list:
         model_name = series_name + "_" + str(weights)
@@ -56,11 +54,14 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
             doc_matrix = doc_matrix[training_no:, :, :]
 
             if extractive:
-                docs, refs, _ = get_duc()
-                docs = docs[training_no:]
-                refs = refs[training_no:]
+                if test_dataset == "duc":
+                    docs, refs, _ = get_duc()
+                else:
+                    docs_pas_lists, refs_pas_lists = get_pas_lists(index)
+                    refs = get_sources_from_pas_lists(refs_pas_lists)
+                    docs = get_sources_from_pas_lists(docs_pas_lists)
 
-                score, recall_list_part = dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs,
+                score, recall_list_part = dataset_rouge_scores_extract(model_name, docs[training_no:], doc_matrix, refs[training_no:],
                                                                        dynamic_summ_len=True, batch=index, rem_ds=True)
             else:
                 docs_pas_lists, refs_pas_lists = get_pas_lists(index)
