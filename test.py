@@ -27,18 +27,21 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
                         (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3),
                         (0.8, 0.2), (0.9, 0.1), (1.0, 0.0)]
 
+    duc_max_len = 385
+    nyt_max_len = 300
+
     # Indices varies based on the dataset.
     last_index_size = 685
     if test_dataset == "nyt":
         batches = 35
         duc_index = 0       # Used to set the parameter "index" to -1 when using DUC, to get duc matrices and scores.
-        training_no = 832   # Includes validation.
-        max_doc_len = 300   # Max size of the matrices in case of nyt dataset.
+        training_no = 832       # Includes validation.
+        max_doc_len = nyt_max_len   # Max size of the matrices in case of nyt dataset.
     else:
         batches = 0         # With duc it will only consider the value -1 (duc matrices using get_matrices).
         duc_index = -1
         training_no = 422
-        max_doc_len = 385
+        max_doc_len = duc_max_len
 
     for weights in weights_list:
         model_name = series_name + "_" + str(weights)
@@ -61,10 +64,10 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
                                                                        dynamic_summ_len=True, batch=index, rem_ds=True)
             else:
                 if test_dataset != train_dataset:
-                    if test_dataset == "nyt":                           # Test DUC with NYT model.
-                        doc_matrix = doc_matrix[training_no:, :max_doc_len, :]
+                    if test_dataset == "duc":                           # Test DUC with NYT model.
+                        doc_matrix = doc_matrix[training_no:, :nyt_max_len, :]
                     else:                                               # Test NYT with DUC model.
-                        extended_doc_matrix = np.zeros((doc_matrix.shape[0], max_doc_len, doc_matrix.shape[2]))
+                        extended_doc_matrix = np.zeros((doc_matrix.shape[0], duc_max_len, doc_matrix.shape[2]))
                         extended_doc_matrix[:doc_matrix.shape[0],
                                             :doc_matrix.shape[1], :doc_matrix.shape[2]] = doc_matrix
                         doc_matrix = extended_doc_matrix
