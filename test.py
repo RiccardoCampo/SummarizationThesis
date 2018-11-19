@@ -63,19 +63,20 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
                 score, recall_list_part = dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs,
                                                                        dynamic_summ_len=True, batch=index, rem_ds=True)
             else:
+                docs_pas_lists, refs_pas_lists = get_pas_lists(index)
+                refs = get_sources_from_pas_lists(refs_pas_lists)
+                docs_pas_lists = docs_pas_lists[training_no:]
+                refs = refs[training_no:]
+
                 if test_dataset != train_dataset:
                     if test_dataset == "duc":                           # Test DUC with NYT model.
                         doc_matrix = doc_matrix[training_no:, :nyt_max_len, :]
+                        docs_pas_lists = [pas_list[:nyt_max_len] for pas_list in docs_pas_lists]
                     else:                                               # Test NYT with DUC model.
                         extended_doc_matrix = np.zeros((doc_matrix.shape[0], duc_max_len, doc_matrix.shape[2]))
                         extended_doc_matrix[:doc_matrix.shape[0],
                                             :doc_matrix.shape[1], :doc_matrix.shape[2]] = doc_matrix
                         doc_matrix = extended_doc_matrix
-
-                docs_pas_lists, refs_pas_lists = get_pas_lists(index)
-                refs = get_sources_from_pas_lists(refs_pas_lists)
-                docs_pas_lists = docs_pas_lists[training_no:]
-                refs = refs[training_no:]
 
                 score, recall_list_part = dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
                                                                     dynamic_summ_len=True, batch=index, rem_ds=True)
