@@ -192,6 +192,10 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
         if direct_speech_ratio(tokens(docs[i])) < 0.15 or not rem_ds:
             print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
             pas_no = len(docs_pas_lists[i])
+            print(pas_no)
+            print(i)
+            print(len(pred_scores))
+            print(len(pred_scores[i]))
 
             # Cutting the scores to the length of the document and arrange them by score
             # preserving the original position.
