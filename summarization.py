@@ -88,7 +88,7 @@ def generate_extract_summary(sentences, scores, summ_len=100):
     best_indices = []
     size = 0
     j = 0
-    while size < summ_len and j < sents_no:
+    while size < summ_len and j < len(scores):
         index = sorted_indices[j]
         sent_len = len(sentences[index].split())
         if sent_len > 3:
@@ -330,7 +330,7 @@ def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, ds_threshold=0.
     return rouge_scores
 
 
-def dataset_rouge_scores_weighted_extractive(docs_sent_lists, scores_lists, refs, weights, summ_len=100):
+def dataset_rouge_scores_weighted_extractive(docs_sent_lists, vectors_lists, refs, weights, summ_len=100):
     """
     Computing rouge scores with the weighted method.
 
@@ -348,7 +348,8 @@ def dataset_rouge_scores_weighted_extractive(docs_sent_lists, scores_lists, refs
     for sentences in docs_sent_lists:
         sent_index = docs_sent_lists.index(sentences)
         if direct_speech_ratio(sentences) < 0.15:
-            scores = [scores.dot(np.array(weights)) for scores in scores_lists[sent_index]]
+            scores = [vector.dot(np.array(weights)) for vector in vectors_lists[sent_index]]
+            #scores = np.random.randint(0, 1000, len(sentences))
             summary = generate_extract_summary(sentences, scores, summ_len=summ_len)
 
             score = document_rouge_scores(summary, refs[sent_index])

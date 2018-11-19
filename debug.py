@@ -24,26 +24,26 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
-#"""
+"""
 for i in range(0, 35):
     print("matrices {}".format(i))
     for scores in ("non_bin", "bin", "bestN"):
         print("scores: {} {}".format(i, scores))
         store_score_matrices(i, scores, True)
-#"""
+"""
 
-"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
-weights_list = [ # [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+#"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
+weights_list = [#  [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 #  [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
                 # [0.0, 0.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
                 # [0.2, 0.1, 0.3, 0.1, 0.1, 0.2],
-                [0.3, 0.05, 0.3, 0.1, 0.05, 0.2],
+                 [0.3, 0.05, 0.3, 0.1, 0.05, 0.2],
                 # [0.1, 0.05, 0.3, 0.1, 0.15, 0.2]
                 ]
 
-duc_dataset = False
-extractive = False
-ds_threshold = 1.15
+duc_dataset = True
+extractive = True
+ds_threshold = 0.15
 
 if duc_dataset:
     training_no = 422
@@ -66,15 +66,15 @@ for weights in weights_list:
             training_no = 685
 
         docs_pas_lists, refs_pas_lists = get_pas_lists(index)
+        docs_pas_lists = docs_pas_lists[training_no:]
         refs = get_sources_from_pas_lists(refs_pas_lists[training_no:])
 
         if extractive:
             docs_sent_lists = [[pas.sentence for pas in pas_list] for pas_list in docs_pas_lists]
             sent_matrix, _, _ = get_matrices(index, "bin", True, (0.3, 0.7))
-            scores_lists = sent_matrix[training_no:, :, :6]
-            score = dataset_rouge_scores_weighted_extractive(docs_pas_lists, scores_lists, refs, weights)
+            vectors_lists = sent_matrix[training_no:, :, :6]
+            score = dataset_rouge_scores_weighted_extractive(docs_sent_lists, vectors_lists, refs, weights)
         else:
-            docs_pas_lists = docs_pas_lists[training_no:]
             score = dataset_rouge_scores_weighted(docs_pas_lists, refs, weights)
 
         rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
@@ -88,10 +88,10 @@ for weights in weights_list:
         rouge_scores[k] /= batches - duc_index
 
     with open(os.getcwd() + "/results/results.txt", "a") as res_file:
-        print(dataset + " w no ds " + str(weights), file=res_file)
+        print(dataset + " w no ds" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-"""
+#"""
 
 
 """ CHECKING DIRECT SPEECH
