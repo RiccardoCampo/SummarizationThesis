@@ -65,7 +65,7 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
     if val_size > 0:
         set_size = int(doc_matrix.shape[0] - val_size)
     else:
-        set_size = int(doc_matrix.shape[0] / 2)  # Half for training, half for validation.
+        set_size = int(doc_matrix.shape[0])
 
     x_train = doc_matrix[:set_size, :, :]
     x_test = doc_matrix[set_size:, :, :]
