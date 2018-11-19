@@ -70,7 +70,7 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
 
                 if test_dataset != train_dataset:
                     if test_dataset == "duc":                           # Test DUC with NYT model.
-                        doc_matrix = doc_matrix[training_no:, :nyt_max_len, :]
+                        doc_matrix = doc_matrix[:, :nyt_max_len, :]
                         docs_pas_lists = [pas_list[:nyt_max_len] for pas_list in docs_pas_lists]
                     else:                                               # Test NYT with DUC model.
                         extended_doc_matrix = np.zeros((doc_matrix.shape[0], duc_max_len, doc_matrix.shape[2]))

@@ -180,7 +180,6 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
     recall_score_list = []
 
     pred_scores = predict_scores(model_name, doc_matrix)
-    print(pred_scores)
     summaries = []
     # Store the docs and refs which are not discarded,
     # they are needed to match the order of the summaries while using sample_summaries().
