@@ -24,6 +24,28 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
+
+
+sentences = ["hello there I'm new here", "hello there I'm new here"]
+embedder = hub.Module("https://tfhub.dev/google/nnlm-en-dim128-with-normalization/1")
+session = tf.Session()
+session.run([tf.global_variables_initializer(), tf.tables_initializer()])
+embeddings = session.run(embedder(sentences))
+session.close()
+
+print(embeddings)
+
+print("\n\n\n\n\n\n\n")
+
+embeddings2 = sentence_embeddings(sentences)
+print(embeddings2)
+
+print("\n\n\n\n\n\n\n")
+print(np.inner(embeddings[0], embeddings[1]))
+print(np.dot(embeddings[0], embeddings[1]))
+print(np.inner(embeddings2[0], embeddings2[1]))
+print(np.dot(embeddings2[0], embeddings2[1]))
+
 """
 for i in range(0, 35):
     print("matrices {}".format(i))
@@ -32,7 +54,7 @@ for i in range(0, 35):
         store_score_matrices(i, scores, True)
 """
 
-#"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
+"""     TESTING WEIGHTED PAS METHOD (SIMPLE)
 weights_list = [#  [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 #  [0.0, 1.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
                 # [0.0, 0.0, 0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
@@ -91,7 +113,7 @@ for weights in weights_list:
         print(dataset + " w no ds" + str(weights), file=res_file)
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
-#"""
+"""
 
 
 """ CHECKING DIRECT SPEECH

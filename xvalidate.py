@@ -18,15 +18,19 @@ def x_validate(dataset, scores_type, weights):
         doc_size = 300  # Max size of the matrices in case of nyt dataset.
         batch_size = 20
         doc_matrix, _, score_matrix = get_matrices(0, scores_type, False, weights)
+        doc_matrix = doc_matrix[:150, :, :]
+        score_matrix = score_matrix[:150, :]
         docs_pas_lists, refs_pas_lists = get_pas_lists(0)
+        docs_pas_lists = docs_pas_lists[:150]
+        refs_pas_lists = refs_pas_lists[:150]
         for i in range(1, 34):
             doc_sub_matrix, _, score_sub_matrix = get_matrices(i, scores_type, False, weights)
-            doc_matrix = np.append(doc_matrix, doc_sub_matrix)
-            score_matrix = np.append(score_matrix, score_sub_matrix)
+            doc_matrix = np.append(doc_matrix, doc_sub_matrix[:150, :, :])
+            score_matrix = np.append(score_matrix, score_sub_matrix[:150, :])
 
             docs_pas_lists_part, refs_pas_lists_part = get_pas_lists(i)
-            docs_pas_lists.extend(docs_pas_lists_part)
-            refs_pas_lists.extend(refs_pas_lists_part)
+            docs_pas_lists.extend(docs_pas_lists_part[:150])
+            refs_pas_lists.extend(refs_pas_lists_part[:150])
     else:
         cutting_index = 500
         section_dim = 50
