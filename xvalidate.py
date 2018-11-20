@@ -24,6 +24,7 @@ def x_validate(dataset, scores_type, weights):
         docs_pas_lists = docs_pas_lists[:150]
         refs_pas_lists = refs_pas_lists[:150]
         for i in range(1, 34):
+            print("Adding batch {}".format(i))
             doc_sub_matrix, _, score_sub_matrix = get_matrices(i, scores_type, False, weights)
             doc_matrix = np.append(doc_matrix, doc_sub_matrix[:150, :, :])
             score_matrix = np.append(score_matrix, score_sub_matrix[:150, :])
