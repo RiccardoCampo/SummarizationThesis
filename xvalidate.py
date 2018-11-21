@@ -14,7 +14,7 @@ def x_validate(dataset, scores_type, weights):
 
     if dataset == "nyt":
         cutting_index = 5000
-        section_dim = 50
+        section_dim = 500
         doc_size = 300  # Max size of the matrices in case of nyt dataset.
         batch_size = 20
         doc_matrix, _, score_matrix = get_matrices(0, scores_type, False, weights)
