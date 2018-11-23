@@ -214,7 +214,7 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
             recall_score_list.append(score["rouge_1_recall"])
 
-    sample_summaries(model_name, selected_docs, selected_refs, summaries, recall_score_list, batch=batch, all=False)
+    sample_summaries(model_name, selected_docs, selected_refs, summaries, recall_score_list, batch=batch, all=True)
 
     for k in rouge_scores.keys():
         rouge_scores[k] /= len(summaries)
