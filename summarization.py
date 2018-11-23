@@ -189,7 +189,7 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
 
     # Computing the score for each document than compute the average.
     for i in range(len(docs_pas_lists)):
-        if direct_speech_ratio(tokens(docs[i])) < 0.15 or not rem_ds:
+        if direct_speech_ratio_pas(docs_pas_lists[i]) < 0.15 or not rem_ds:
             print("Processing doc:" + str(i) + "/" + str(len(docs_pas_lists)))
             pas_no = len(docs_pas_lists[i])
 
@@ -214,7 +214,7 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
             rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
             recall_score_list.append(score["rouge_1_recall"])
 
-    sample_summaries(model_name, selected_docs, selected_refs, summaries, recall_score_list, batch=batch)
+    sample_summaries(model_name, selected_docs, selected_refs, summaries, recall_score_list, batch=batch, all=False)
 
     for k in rouge_scores.keys():
         rouge_scores[k] /= len(summaries)

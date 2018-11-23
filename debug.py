@@ -2,12 +2,14 @@ import os
 import pickle
 import re
 import time
+from math import sqrt
 
 import tensorflow_hub as hub
 import tensorflow as tf
 import numpy as np
 import logging
 import keras
+from scipy.stats import stats
 
 from dataset_scores import store_full_sentence_matrices, store_score_matrices, get_matrices
 from dataset_text import get_duc, get_nyt, \
@@ -25,26 +27,52 @@ _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
 
+def equiv_test(set0, set1):
+    pooled_var = (np.var(set0) * (len(set0) - 1) + np.var(set1) * (len(set1) - 1)) / (len(set0) + len(set1) - 2)
+    print(pooled_var)
+    return (abs(np.mean(set0) - np.mean(set1)) - 0.02) / sqrt(pow(pooled_var, 2) * (1 / len(set0) + 1 / len(set1)))
 
-sentences = ["hello there I'm new here", "hello there I'm new here"]
-embedder = hub.Module("https://tfhub.dev/google/nnlm-en-dim128-with-normalization/1")
-session = tf.Session()
-session.run([tf.global_variables_initializer(), tf.tables_initializer()])
-embeddings = session.run(embedder(sentences))
-session.close()
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section0_take3_rc_list.dat", "rb") as f:
+    tk0 = pickle.load(f)
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section50_take0_rc_list.dat", "rb") as f:
+    tk1 = pickle.load(f)
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section100_take1_rc_list.dat", "rb") as f:
+    tk2 = pickle.load(f)
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section150_take2_rc_list.dat", "rb") as f:
+    tk3 = pickle.load(f)
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section200_take4_rc_list.dat", "rb") as f:
+    tk4 = pickle.load(f)
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section250_take3_rc_list.dat", "rb") as f:
+    tk5 = pickle.load(f)
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section300_take1_rc_list.dat", "rb") as f:
+    tk6 = pickle.load(f)
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section350_take1_rc_list.dat", "rb") as f:
+    tk7 = pickle.load(f)
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section400_take4_rc_list.dat", "rb") as f:
+    tk8 = pickle.load(f)
+with open(os.getcwd() + "/results/recall_lists/xval_duc_bin_(0.8, 0.2)_section450_take1_rc_list.dat", "rb") as f:
+    tk9 = pickle.load(f)
 
-print(embeddings)
 
-print("\n\n\n\n\n\n\n")
 
-embeddings2 = sentence_embeddings(sentences)
-print(embeddings2)
+print(np.var(tk0))
+print(np.var(tk1))
+print(np.var(tk2))
+print(np.var(tk3))
+print(np.var(tk4))
+print(np.var(tk5))
+print(np.var(tk6))
+print(np.var(tk7))
+print(np.var(tk8))
+print(np.var(tk9))
+print(np.mean(tk0))
+print(np.mean(tk1))
 
-print("\n\n\n\n\n\n\n")
-print(np.inner(embeddings[0], embeddings[1]))
-print(np.dot(embeddings[0], embeddings[1]))
-print(np.inner(embeddings2[0], embeddings2[1]))
-print(np.dot(embeddings2[0], embeddings2[1]))
+print(equiv_test(tk0, tk1))
+print(equiv_test(tk1, tk2))
+
+print(stats.f_oneway(tk0, tk1, tk2, tk3, tk4, tk5, tk6, tk7, tk8, tk9))
+
 
 """
 for i in range(0, 35):
