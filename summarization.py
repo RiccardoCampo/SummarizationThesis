@@ -269,8 +269,8 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
             rouge_scores["rouge_2_precision"].append(score["rouge_2_precision"])
             rouge_scores["rouge_2_f_score"].append(score["rouge_2_f_score"])
 
-        sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"],
-                         batch=batch, all=True)
+        #sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"],
+         #                batch=batch, all=True)
 
         return rouge_scores
 
