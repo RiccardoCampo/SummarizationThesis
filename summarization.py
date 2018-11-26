@@ -272,7 +272,7 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
         #sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"],
          #                batch=batch, all=True)
 
-        return rouge_scores
+    return rouge_scores
 
 
 def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, ds_threshold=0.15, summ_len=100):
