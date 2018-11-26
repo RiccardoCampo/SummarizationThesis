@@ -262,12 +262,12 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
 
             # Get the rouge scores.
             score = document_rouge_scores(summary, refs[i])
-            rouge_scores["rouge_1_recall"].append(score["rouge_1_recall"])
-            rouge_scores["rouge_1_precision"].append(score["rouge_1_precision"])
-            rouge_scores["rouge_1_f_score"].append(score["rouge_1_f_score"])
-            rouge_scores["rouge_2_recall"].append(score["rouge_2_recall"])
-            rouge_scores["rouge_2_precision"].append(score["rouge_2_precision"])
-            rouge_scores["rouge_2_f_score"].append(score["rouge_2_f_score"])
+            rouge_scores["rouge_1_recall"].append(float(score["rouge_1_recall"]))
+            rouge_scores["rouge_1_precision"].append(float(score["rouge_1_precision"]))
+            rouge_scores["rouge_1_f_score"].append(float(score["rouge_1_f_score"]))
+            rouge_scores["rouge_2_recall"].append(float(score["rouge_2_recall"]))
+            rouge_scores["rouge_2_precision"].append(float(score["rouge_2_precision"]))
+            rouge_scores["rouge_2_f_score"].append(float(score["rouge_2_f_score"]))
 
         #sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"],
          #                batch=batch, all=True)
