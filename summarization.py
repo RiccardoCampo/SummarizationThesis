@@ -19,7 +19,7 @@ def generate_summary(pas_list, scores, summ_len=100):
     :param summ_len: maximum length of the generated summary.
     :return: string containing the summary.
     """
-    resolve_anaphora_pas_list(pas_list)
+    #resolve_anaphora_pas_list(pas_list)
     pas_no = len(pas_list)
     sorted_scores = [(j, scores[j]) for j in range(len(scores))]
     sorted_scores.sort(key=lambda tup: -tup[1])
@@ -175,9 +175,8 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
     :param rem_ds: if True sentences with more that 15% of direct speech will not be considered.
     :return: average rouge scores and list of rouge 1 recall scores for each document.
     """
-    rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
-                    "rouge_2_precision": 0, "rouge_2_f_score": 0}
-    recall_score_list = []
+    rouge_scores = {"rouge_1_recall": [], "rouge_1_precision": [], "rouge_1_f_score": [], "rouge_2_recall": [],
+                    "rouge_2_precision": [], "rouge_2_f_score": []}
 
     pred_scores = predict_scores(model_name, doc_matrix)
     summaries = []
@@ -206,20 +205,16 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
 
             # Get the rouge scores.
             score = document_rouge_scores(summary, refs[i])
-            rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
-            rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
-            rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
-            rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
-            rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
-            rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
-            recall_score_list.append(score["rouge_1_recall"])
+            rouge_scores["rouge_1_recall"].append(float(score["rouge_1_recall"]))
+            rouge_scores["rouge_1_precision"].append(float(score["rouge_1_precision"]))
+            rouge_scores["rouge_1_f_score"].append(float(score["rouge_1_f_score"]))
+            rouge_scores["rouge_2_recall"].append(float(score["rouge_2_recall"]))
+            rouge_scores["rouge_2_precision"].append(float(score["rouge_2_precision"]))
+            rouge_scores["rouge_2_f_score"].append(float(score["rouge_2_f_score"]))
 
-    sample_summaries(model_name, selected_docs, selected_refs, summaries, recall_score_list, batch=batch, all=True)
+    sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"], batch=batch, all=True)
 
-    for k in rouge_scores.keys():
-        rouge_scores[k] /= len(summaries)
-
-    return rouge_scores, recall_score_list
+    return rouge_scores
 
 
 #
@@ -236,9 +231,8 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
     :param rem_ds: if True sentences with more that 15% of direct speech will not be considered.
     :return: average rouge scores and list of rouge 1 recall scores for each document.
     """
-    rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
-                    "rouge_2_precision": 0, "rouge_2_f_score": 0}
-    recall_score_list = []
+    rouge_scores = {"rouge_1_recall": [], "rouge_1_precision": [], "rouge_1_f_score": [], "rouge_2_recall": [],
+                    "rouge_2_precision": [], "rouge_2_f_score": []}
 
     pred_scores = predict_scores(model_name, doc_matrix)
     summaries = []
@@ -268,20 +262,17 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
 
             # Get the rouge scores.
             score = document_rouge_scores(summary, refs[i])
-            rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
-            rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
-            rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
-            rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
-            rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
-            rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
-            recall_score_list.append(score["rouge_1_recall"])
+            rouge_scores["rouge_1_recall"].append(score["rouge_1_recall"])
+            rouge_scores["rouge_1_precision"].append(score["rouge_1_precision"])
+            rouge_scores["rouge_1_f_score"].append(score["rouge_1_f_score"])
+            rouge_scores["rouge_2_recall"].append(score["rouge_2_recall"])
+            rouge_scores["rouge_2_precision"].append(score["rouge_2_precision"])
+            rouge_scores["rouge_2_f_score"].append(score["rouge_2_f_score"])
 
-    sample_summaries(model_name, selected_docs, selected_refs, summaries, recall_score_list, batch=batch)
+        sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"],
+                         batch=batch, all=True)
 
-    for k in rouge_scores.keys():
-        rouge_scores[k] /= len(summaries)
-
-    return rouge_scores, recall_score_list
+        return rouge_scores
 
 
 def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, ds_threshold=0.15, summ_len=100):

@@ -14,6 +14,7 @@ from scipy.stats import stats
 from dataset_scores import store_full_sentence_matrices, store_score_matrices, get_matrices
 from dataset_text import get_duc, get_nyt, \
     store_pas_nyt_dataset, compute_idfs, get_pas_lists, arrange_nyt_pas_lists
+from deep_model import build_model, train_model
 from loss_testing import summary_clustering_score, summary_clustering_score_2
 from pas import realize_pas
 from summarization import best_pas, generate_summary, \
@@ -26,7 +27,104 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
+#"""         # ORDER ACCURACY
+def dist(vec1, vec2):
+    i = 0
+    tot_matches_len = 0
+    while i < len(vec1):
+        match_len = 0
+        for j in range(len(vec2)):
+            if vec1[i] == vec2[j]:
+                match_len += 1
+                if i == len(vec1) - 1:
+                    break
+                i += 1
+            elif match_len > 0:
+                break
+        if match_len > 1:
+            tot_matches_len += match_len
+        i += 1
 
+    return tot_matches_len / len(vec1)
+
+
+def get_sorted_indices(vector):
+    sorted_scores = [(j, vector[j]) for j in range(len(vector))]
+    sorted_scores.sort(key=lambda tup: -tup[1])
+
+    # Get the indices of the sorted pas, then a list of the sorted realized pas.
+    return [sorted_score[0] for sorted_score in sorted_scores]
+
+
+def edit_dist(vec1, vec2):
+    dim = len(vec1)
+    d = np.zeros((dim, dim))
+    for i in range(dim):
+        d[i, 0] = i
+        d[0, i] = i
+
+    for i in range(1, dim):
+        for j in range(1, dim):
+            if vec1[i] == vec2[j]:
+                subst_cost = 0
+            else:
+                subst_cost = 1
+            d[i, j] = min(d[i - 1, j] + 1, d[i, j - 1] + 1, d[i - 1, j - 1] + subst_cost)
+
+    return (dim - d[dim-1, dim-1]) / dim
+
+
+doc_matrix, _, score_matrix = get_matrices(-1, "bestN", False, (0.3, 0.7))
+
+test_docs = doc_matrix[422:, :, :]
+test_scores = score_matrix[422:, :]
+
+model = build_model(385, 134, "mse", 10, "hard_sigmoid")
+predicted_scores = model.predict(test_docs, batch_size=1)
+
+pre_perc = 0
+pre_perc_edit = 0
+for i in range(test_docs.shape[0]):
+    test_doc = test_docs[i]
+    unpadded_dim = (test_doc[~np.all(test_doc == 0, axis=1)]).shape[0]
+    unpadded_dim = int(unpadded_dim / 4)
+    pre_perc += dist(get_sorted_indices(predicted_scores[i])[:unpadded_dim],
+                     get_sorted_indices(test_scores[i])[:unpadded_dim])
+    pre_perc_edit += edit_dist(get_sorted_indices(predicted_scores[i])[:unpadded_dim],
+                               get_sorted_indices(test_scores[i])[:unpadded_dim])
+
+pre_perc /= test_docs.shape[0]
+pre_perc_edit /= test_docs.shape[0]
+
+doc_matrix = doc_matrix[:422, :, :]
+score_matrix = score_matrix[:422, :]
+train_model(model, "test", doc_matrix, score_matrix, 0, 1,
+            batch_size=1, val_size=50, save_model=False)
+
+predicted_scores = model.predict(test_docs, batch_size=1)
+post_perc = 0
+post_perc_edit = 0
+for i in range(test_docs.shape[0]):
+    test_doc = test_docs[i]
+    unpadded_dim = (test_doc[~np.all(test_doc == 0, axis=1)]).shape[0]
+    unpadded_dim = int(unpadded_dim / 4)
+    post_perc += dist(get_sorted_indices(predicted_scores[i])[:unpadded_dim],
+                      get_sorted_indices(test_scores[i])[:unpadded_dim])
+    post_perc_edit += edit_dist(get_sorted_indices(predicted_scores[i])[:unpadded_dim],
+                                get_sorted_indices(test_scores[i])[:unpadded_dim])
+
+post_perc /= test_docs.shape[0]
+post_perc_edit /= test_docs.shape[0]
+
+print(pre_perc)
+print(pre_perc_edit)
+
+print(post_perc)
+print(post_perc_edit)
+
+#"""
+
+"""
 def equiv_test(set0, set1):
     pooled_var = (np.var(set0) * (len(set0) - 1) + np.var(set1) * (len(set1) - 1)) / (len(set0) + len(set1) - 2)
     print(pooled_var)
@@ -72,7 +170,7 @@ print(equiv_test(tk0, tk1))
 print(equiv_test(tk1, tk2))
 
 print(stats.f_oneway(tk0, tk1, tk2, tk3, tk4, tk5, tk6, tk7, tk8, tk9))
-
+"""
 
 """
 for i in range(0, 35):
@@ -142,7 +240,6 @@ for weights in weights_list:
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
 """
-
 
 """ CHECKING DIRECT SPEECH
 dataset_len = 0
@@ -293,7 +390,6 @@ for weights in weights_list:
         print(rouge_scores, file=res_file)
         print("=================================================", file=res_file)
 """
-
 
 """
 docs, _ = get_pas_lists(-1)

@@ -43,9 +43,8 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
 
     for weights in weights_list:
         model_name = series_name + "_" + str(weights)
-        rouge_scores = {"rouge_1_recall": 0, "rouge_1_precision": 0, "rouge_1_f_score": 0, "rouge_2_recall": 0,
-                        "rouge_2_precision": 0, "rouge_2_f_score": 0}
-        recall_list = []                            # Storing the recall for each document.
+        rouge_scores = {"rouge_1_recall": [], "rouge_1_precision": [], "rouge_1_f_score": [], "rouge_2_recall": [],
+                        "rouge_2_precision": [], "rouge_2_f_score": []}
         for index in range(duc_index, batches):
             if index == 34:
                 training_no = last_index_size
@@ -61,7 +60,7 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
                     refs = get_sources_from_pas_lists(refs_pas_lists)
                     docs = get_sources_from_pas_lists(docs_pas_lists)
 
-                score, recall_list_part = dataset_rouge_scores_extract(model_name, docs[training_no:], doc_matrix, refs[training_no:],
+                score = dataset_rouge_scores_extract(model_name, docs[training_no:], doc_matrix, refs[training_no:],
                                                                        dynamic_summ_len=True, batch=index, rem_ds=True)
             else:
                 docs_pas_lists, refs_pas_lists = get_pas_lists(index)
@@ -79,20 +78,14 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
                                             :doc_matrix.shape[1], :doc_matrix.shape[2]] = doc_matrix
                         doc_matrix = extended_doc_matrix
 
-                score, recall_list_part = dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
+                score = dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
                                                                     dynamic_summ_len=True, batch=index, rem_ds=True)
-
-            rouge_scores["rouge_1_recall"] += score["rouge_1_recall"]
-            rouge_scores["rouge_1_precision"] += score["rouge_1_precision"]
-            rouge_scores["rouge_1_f_score"] += score["rouge_1_f_score"]
-            rouge_scores["rouge_2_recall"] += score["rouge_2_recall"]
-            rouge_scores["rouge_2_precision"] += score["rouge_2_precision"]
-            rouge_scores["rouge_2_f_score"] += score["rouge_2_f_score"]
-            recall_list.extend(recall_list_part)
-
-        # Averaging the scores wrt the number of batches.
-        for k in rouge_scores.keys():
-            rouge_scores[k] /= batches - duc_index  # if duc then /1 else /35
+            rouge_scores["rouge_1_recall"].extend(score["rouge_1_recall"])
+            rouge_scores["rouge_1_precision"].extend(score["rouge_1_precision"])
+            rouge_scores["rouge_1_f_score"].extend(score["rouge_1_f_score"])
+            rouge_scores["rouge_2_recall"].extend(score["rouge_2_recall"])
+            rouge_scores["rouge_2_precision"].extend(score["rouge_2_precision"])
+            rouge_scores["rouge_2_f_score"].extend(score["rouge_2_f_score"])
 
         # Get validation accuracy histories.
         with open(os.getcwd() + "/results/histories/" + model_name + ".hst", "rb") as file:
@@ -100,13 +93,18 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
         val_acc = history['val_acc']
 
         with open(os.getcwd() + "/results/results.txt", "a") as res_file:
-            print(model_name + "   val_acc: " + str(val_acc[-1]) +
-                  "   tested on: " + test_dataset + " with #  of docs: " + str(len(recall_list)), file=res_file)
-            print(rouge_scores, file=res_file)
+            print("{}    val acc: {}    tested on: {}  with # of docs: {}"
+                  .format(model_name, str(val_acc[-1]), test_dataset,
+                          str(len(rouge_scores["rouge_1_recall"]))), file=res_file)
+            scores = ""
+            for key in rouge_scores.keys():
+                scores += "{}: avg: {}, var:{};".format(key, np.average(np.array(rouge_scores[key])),
+                                                        np.var(np.array(rouge_scores[key])))
+            print(scores, file=res_file)
             print("=================================================", file=res_file)
 
-        with open(os.getcwd() + "/results/recall_lists/" + model_name + "_rc_list.dat", "wb") as list_file:
-            pickle.dump(recall_list, list_file)
+        with open(os.getcwd() + "/results/recall_lists/" + model_name + "_scores_list.dat", "wb") as list_file:
+            pickle.dump(rouge_scores, list_file)
 
 
 if __name__ == "__main__":
