@@ -61,7 +61,7 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
                     docs = get_sources_from_pas_lists(docs_pas_lists)
 
                 score = dataset_rouge_scores_extract(model_name, docs[training_no:], doc_matrix, refs[training_no:],
-                                                                       dynamic_summ_len=True, batch=index, rem_ds=True)
+                                                                       dynamic_summ_len=True, batch=index, rem_ds=False)
             else:
                 docs_pas_lists, refs_pas_lists = get_pas_lists(index)
                 refs = get_sources_from_pas_lists(refs_pas_lists)
