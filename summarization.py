@@ -243,31 +243,31 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
 
     # Computing the score for each document than compute the average.
     for i in range(len(docs)):
-        if direct_speech_ratio(docs[i]) < 0.15 or not rem_ds:
-            print("Processing doc:" + str(i) + "/" + str(len(docs)))
-            docs[i] = text_cleanup(docs[i])
-            refs[i] = text_cleanup(refs[i])
-            sentences = tokens(docs[i])
-            sents_no = len(sentences)
-            # Cutting the scores to the length of the document and arrange them by score
-            # preserving the original position.
-            scores = pred_scores[i][:sents_no]
-            if dynamic_summ_len:
-                summary = generate_extract_summary(sentences, scores, summ_len=len(refs[i].split()))
-            else:
-                summary = generate_extract_summary(sentences, scores, summ_len=100)
-            summaries.append(summary)
-            selected_docs.append(docs[i])
-            selected_refs.append(refs[i])
+        #if direct_speech_ratio(docs[i]) < 0.15 or not rem_ds:
+        print("Processing doc:" + str(i) + "/" + str(len(docs)))
+        docs[i] = text_cleanup(docs[i])
+        refs[i] = text_cleanup(refs[i])
+        sentences = tokens(docs[i])
+        sents_no = len(sentences)
+        # Cutting the scores to the length of the document and arrange them by score
+        # preserving the original position.
+        scores = pred_scores[i][:sents_no]
+        if dynamic_summ_len:
+            summary = generate_extract_summary(sentences, scores, summ_len=len(refs[i].split()))
+        else:
+            summary = generate_extract_summary(sentences, scores, summ_len=100)
+        summaries.append(summary)
+        selected_docs.append(docs[i])
+        selected_refs.append(refs[i])
 
-            # Get the rouge scores.
-            score = document_rouge_scores(summary, refs[i])
-            rouge_scores["rouge_1_recall"].append(float(score["rouge_1_recall"]))
-            rouge_scores["rouge_1_precision"].append(float(score["rouge_1_precision"]))
-            rouge_scores["rouge_1_f_score"].append(float(score["rouge_1_f_score"]))
-            rouge_scores["rouge_2_recall"].append(float(score["rouge_2_recall"]))
-            rouge_scores["rouge_2_precision"].append(float(score["rouge_2_precision"]))
-            rouge_scores["rouge_2_f_score"].append(float(score["rouge_2_f_score"]))
+        # Get the rouge scores.
+        score = document_rouge_scores(summary, refs[i])
+        rouge_scores["rouge_1_recall"].append(float(score["rouge_1_recall"]))
+        rouge_scores["rouge_1_precision"].append(float(score["rouge_1_precision"]))
+        rouge_scores["rouge_1_f_score"].append(float(score["rouge_1_f_score"]))
+        rouge_scores["rouge_2_recall"].append(float(score["rouge_2_recall"]))
+        rouge_scores["rouge_2_precision"].append(float(score["rouge_2_precision"]))
+        rouge_scores["rouge_2_f_score"].append(float(score["rouge_2_f_score"]))
 
         #sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"],
          #                batch=batch, all=True)
