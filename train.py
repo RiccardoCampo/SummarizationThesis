@@ -1,4 +1,3 @@
-import os
 import sys
 from dataset_scores import get_matrices
 from deep_model import build_model, train_model
@@ -41,8 +40,7 @@ def train(series_name, loss, dense_layers, out_act, batch_size, epochs, scores_t
         train_size = 372
         val_size = 50
         doc_size = 385
-        #duc_index = -1
-        duc_index = 0
+        duc_index = -1
 
     if extractive:
         doc_size = 200
@@ -98,7 +96,7 @@ if __name__ == "__main__":
         extr = bool(int(sys.argv[9]))       # Extractive: 1 if extractive summarization.
         print(extr)
         if len(sys.argv) > 10:
-            w1 = float(sys.argv[10])         # Weight 1.
+            w1 = float(sys.argv[10])        # Weight 1.
             w2 = float(sys.argv[11])        # Weight 2
             train(name, ls, dn, oa, bs, ep, sc, dset, extr, (w1, w2))
         else:

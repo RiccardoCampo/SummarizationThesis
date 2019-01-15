@@ -61,7 +61,7 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
                     docs = get_sources_from_pas_lists(docs_pas_lists)
 
                 score = dataset_rouge_scores_extract(model_name, docs[training_no:], doc_matrix, refs[training_no:],
-                                                                       dynamic_summ_len=True, batch=index, rem_ds=False)
+                                                     dynamic_summ_len=True, batch=index, rem_ds=False)
             else:
                 docs_pas_lists, refs_pas_lists = get_pas_lists(index)
                 refs = get_sources_from_pas_lists(refs_pas_lists)
@@ -79,7 +79,7 @@ def test(series_name, test_dataset, train_dataset, extractive, weights=None):
                         doc_matrix = extended_doc_matrix
 
                 score = dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
-                                                                    dynamic_summ_len=True, batch=index, rem_ds=True)
+                                                  dynamic_summ_len=True, batch=index, rem_ds=True)
             rouge_scores["rouge_1_recall"].extend(score["rouge_1_recall"])
             rouge_scores["rouge_1_precision"].extend(score["rouge_1_precision"])
             rouge_scores["rouge_1_f_score"].extend(score["rouge_1_f_score"])

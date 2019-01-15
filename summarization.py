@@ -1,13 +1,11 @@
 import os
-import random
 
 import numpy as np
 
 from pyrouge import Rouge155
 from deep_model import predict_scores
 from utils import sample_summaries, direct_speech_ratio, get_sources_from_pas_lists, tokens, text_cleanup, \
-    resolve_anaphora_pas_list, sentence_embeddings, centrality_scores, tf_idf, stem_and_stopword, \
-    direct_speech_ratio_pas
+    resolve_anaphora_pas_list, direct_speech_ratio_pas
 
 
 def generate_summary(pas_list, scores, summ_len=100):
@@ -19,7 +17,8 @@ def generate_summary(pas_list, scores, summ_len=100):
     :param summ_len: maximum length of the generated summary.
     :return: string containing the summary.
     """
-    #resolve_anaphora_pas_list(pas_list)
+    resolve_anaphora_pas_list(pas_list)
+
     pas_no = len(pas_list)
     sorted_scores = [(j, scores[j]) for j in range(len(scores))]
     sorted_scores.sort(key=lambda tup: -tup[1])
@@ -212,13 +211,14 @@ def dataset_rouge_scores_deep(model_name, docs_pas_lists, doc_matrix, refs,
             rouge_scores["rouge_2_precision"].append(float(score["rouge_2_precision"]))
             rouge_scores["rouge_2_f_score"].append(float(score["rouge_2_f_score"]))
 
-    sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"], batch=batch, all=True)
+    sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"],
+                     batch=batch, all_summ=True)
 
     return rouge_scores
 
 
 #
-def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_summ_len=False, batch=0, rem_ds=False):
+def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_summ_len=False):
     """
     Compute rouge scores given a model (Extractive summaries).
 
@@ -227,8 +227,6 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
     :param doc_matrix: document matrix.
     :param refs: list of reference summaries.
     :param dynamic_summ_len: if True summary length will be the same as the reference summary.
-    :param batch: number of the batch to process.
-    :param rem_ds: if True sentences with more that 15% of direct speech will not be considered.
     :return: average rouge scores and list of rouge 1 recall scores for each document.
     """
     rouge_scores = {"rouge_1_recall": [], "rouge_1_precision": [], "rouge_1_f_score": [], "rouge_2_recall": [],
@@ -243,7 +241,6 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
 
     # Computing the score for each document than compute the average.
     for i in range(len(docs)):
-        #if direct_speech_ratio(docs[i]) < 0.15 or not rem_ds:
         print("Processing doc:" + str(i) + "/" + str(len(docs)))
         docs[i] = text_cleanup(docs[i])
         refs[i] = text_cleanup(refs[i])
@@ -269,9 +266,6 @@ def dataset_rouge_scores_extract(model_name, docs, doc_matrix, refs, dynamic_sum
         rouge_scores["rouge_2_precision"].append(float(score["rouge_2_precision"]))
         rouge_scores["rouge_2_f_score"].append(float(score["rouge_2_f_score"]))
 
-        #sample_summaries(model_name, selected_docs, selected_refs, summaries, rouge_scores["rouge_1_recall"],
-         #                batch=batch, all=True)
-
     return rouge_scores
 
 
@@ -282,6 +276,7 @@ def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, ds_threshold=0.
     :param docs_pas_lists: list of document pas lists.
     :param refs: list of reference summaries.
     :param weights: list of weights
+    :param ds_threshold: direct speech threshold
     :param summ_len: maximum length of the generated summary.
     :return: rouge scores.
     """
@@ -293,13 +288,8 @@ def dataset_rouge_scores_weighted(docs_pas_lists, refs, weights, ds_threshold=0.
     # the weights.
     ds = 0
     for pas_list in docs_pas_lists:
-        #weights = [random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1),
-         #          random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)]
-        #print(weights)
-        #weights = np.random.dirichlet(np.ones(6),size=1)[0]
         if direct_speech_ratio_pas(pas_list) < ds_threshold:
             scores = [np.array(pas.vector).dot(np.array(weights)) for pas in pas_list]
-            #scores = np.random.randint(0,1000,len(pas_list))
             summary = generate_summary(pas_list, scores, summ_len=summ_len)
 
             score = document_rouge_scores(summary, refs[docs_pas_lists.index(pas_list)])
@@ -325,7 +315,8 @@ def dataset_rouge_scores_weighted_extractive(docs_sent_lists, vectors_lists, ref
     """
     Computing rouge scores with the weighted method.
 
-    :param docs_pas_lists: list of document pas lists.
+    :param docs_sent_lists: list of document sentences.
+    :param vectors_lists: list of sentence vectors.
     :param refs: list of reference summaries.
     :param weights: list of weights
     :param summ_len: maximum length of the generated summary.
@@ -340,7 +331,6 @@ def dataset_rouge_scores_weighted_extractive(docs_sent_lists, vectors_lists, ref
         sent_index = docs_sent_lists.index(sentences)
         if direct_speech_ratio(sentences) < 0.15:
             scores = [vector.dot(np.array(weights)) for vector in vectors_lists[sent_index]]
-            #scores = np.random.randint(0, 1000, len(sentences))
             summary = generate_extract_summary(sentences, scores, summ_len=summ_len)
 
             score = document_rouge_scores(summary, refs[sent_index])

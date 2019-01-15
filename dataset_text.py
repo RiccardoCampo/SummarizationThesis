@@ -132,9 +132,9 @@ def store_pas_duc_dataset():
     # For each document the pas_list is extracted after cleaning the text and tokenizing it.
     for doc in docs:
         print("Processing doc " + str(docs.index(doc)) + "/" + str(len(docs)))
-        doc = text_cleanup(doc)
         # Splitting sentences (by dot).
         sentences = tokens(doc)
+        sentences = [text_cleanup(sentence) for sentence in sentences]
         pas_list = extract_pas(sentences, "duc")
         docs_pas_lists.append(pas_list)
 
@@ -145,9 +145,9 @@ def store_pas_duc_dataset():
     # Same for reference summaries...
     for ref in references:
         print("Processing doc " + str(references.index(ref)) + "/" + str(len(references)))
-        ref = text_cleanup(ref)
         # Splitting sentences (by dot).
         sentences = tokens(ref)
+        sentences = [text_cleanup(sentence) for sentence in sentences]
         pas_list = extract_pas(sentences, "duc", keep_all=True)
         refs_pas_lists.append(pas_list)
 
@@ -225,14 +225,14 @@ def store_pas_nyt_dataset(nyt_path, min_pas, max_pas):
         doc = docs[i]
         ref = references[i]
 
-        doc = text_cleanup(doc)
         # Splitting sentences (by dot).
         sentences = tokens(doc)
+        sentences = [text_cleanup(sentence) for sentence in sentences]
         doc_pas_list = extract_pas(sentences, "nyt")
 
-        ref = text_cleanup(ref)
         # Splitting sentences (by dot).
         sentences = tokens(ref)
+        sentences = [text_cleanup(sentence) for sentence in sentences]
         ref_pas_list = extract_pas(sentences, "nyt", keep_all=True)
 
         if len(doc_pas_list) > 5 and len(doc_pas_list) >= len(ref_pas_list):

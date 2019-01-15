@@ -9,7 +9,7 @@ import tensorflow as tf
 import numpy as np
 import logging
 import keras
-from scipy.stats import stats
+from scipy.stats import stats, ttest_ind
 
 from dataset_scores import store_full_sentence_matrices, store_score_matrices, get_matrices
 from dataset_text import get_duc, get_nyt, \
@@ -27,7 +27,24 @@ from utils import sentence_embeddings, get_sources_from_pas_lists, sample_summar
 _duc_path_ = os.getcwd() + "/dataset/duc_source"
 _nyt_path_ = "D:/Datasets/nyt_corpus/data"
 
+path = "C:/Users/Riccardo/Desktop/scores"
+
+""" # TTEST
+with open(path + "/" + "nyt_340_mse_dense10_hard_sigmoid_bs20_ep1_scores1_(0.7, 0.3)_scores_list.dat", "rb") as f:
+    list1 = pickle.load(f)["rouge_1_recall"]
+with open(path + "/" + "duc_372_mse_dense10_hard_sigmoid_bs1_ep1_scores1_(0.5, 0.5)_scores_list.dat", "rb") as f:
+    list2 = pickle.load(f)["rouge_1_recall"]
+
+print("avg:{}    var:{}".format(np.average(list1), np.var(list1)))
+print("avg:{}    var:{}".format(np.average(list2), np.var(list2)))
+
+print(ttest_ind(list1, list2))
+
+"""
+
 #"""         # ORDER ACCURACY
+
+
 def dist(vec1, vec2):
     i = 0
     tot_matches_len = 0

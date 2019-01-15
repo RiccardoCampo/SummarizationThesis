@@ -99,32 +99,6 @@ def train_model(model, model_name, doc_matrix, score_matrix, initial_epoch,
         K.clear_session()
 
 
-def crop(x):
-    """
-    Crops the output(x[0]) based on the input(x[1]) padding.
-
-    :param x: output(x[0]) and input(x[1]) of the model.
-    :return: crop output.
-    """
-    dense = x[0]
-    inputs = x[1]
-    vector_size = 134
-
-    # Build a matrix having 1 for every non-zero vector, 0 otherwise.
-    padding = K.cast(K.not_equal(inputs, 0), dtype=K.floatx())  # Shape: BxDxV.
-    # Transposing the matrix.
-    padding = K.permute_dimensions(padding, (0, 2, 1))  # Shape: BxVxD.
-
-    resizing = K.ones((1, vector_size))  # Shape: 1xV.
-    padding = K.dot(resizing, padding)  # Shape: Bx1xD
-    padding = K.squeeze(padding, 0)
-    # Rebuilding the vector with only 1 and 0 (as the dot will produce vector_size and 0s).
-    padding = K.cast(K.not_equal(padding, 0), dtype=K.floatx())
-
-    # Multiplying the output by the padding (thus putting to zero the padding documents).
-    return dense * padding
-
-
 def predict_scores(model_name, docs):
     """
     Returns the predicted scores given model name and documents.

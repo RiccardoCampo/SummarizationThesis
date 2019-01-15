@@ -19,7 +19,8 @@ stemmer = PorterStemmer()
 embedder = hub.Module("https://tfhub.dev/google/random-nnlm-en-dim128/1")
 tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 anaphora = corenlp.CoreNLPClient(annotators="coref".split(), timeout=1000000000)
-#anaphora = None
+# anaphora = None
+
 
 def text_cleanup(full_text):
     """
@@ -47,16 +48,6 @@ def text_cleanup(full_text):
     full_text = re.sub("([a-zA-Z0-9])-([a-zA-Z0-9])", r'\1 \2', full_text)
     full_text = re.sub("([a-zA-Z0-9])\(([a-zA-Z0-9]+)\)", r'\1\2', full_text)
     full_text = re.sub("\(([a-zA-Z0-9]+)\)([a-zA-Z0-9])", r'\1\2', full_text)
-
-    # Spacing the contracted form (I'm to I 'm) to fit the srl format.
-    full_text = re.sub("([a-zA-Z0-9])\'([a-zA-Z0-9])", r"\1 '\2", full_text)
-
-    # Spacing apices and parentheses to prevent errors.
-    full_text = re.sub("\"([a-zA-Z0-9 ,']+)\"", r'" \1 "', full_text)
-    full_text = re.sub("\(([a-zA-Z0-9 ,']+)\)", r'( \1 )', full_text)
-
-    # Spacing the commas, dots, semicolons and colons.
-    full_text = re.sub("([a-zA-Z0-9\"\'])([.,:;]) ", r"\1 \2 ", full_text)
 
     # Removing unicode chars (not accepted by SENNA SRL),
     # also removing first 2 and last char as they are markers (b' and ').
@@ -234,7 +225,7 @@ def get_sources_from_pas_lists(pas_lists, dots=True):
     return sources
 
 
-def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch=-1, all=False):
+def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch=-1, all_summ=False):
     """
     Print some relevant summaries from a batch of texts.
 
@@ -244,6 +235,7 @@ def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch
     :param summaries: list of system generated summaries.
     :param recall_score_list: list of rouge 1 recall score of each summary.
     :param batch: batch number.
+    :param all_summ: stores all the summaries, not just 10.
     """
     best_index = recall_score_list.index(max(recall_score_list))
     worst_index = recall_score_list.index(min(recall_score_list))
@@ -266,7 +258,7 @@ def sample_summaries(model_name, docs, refs, summaries, recall_score_list, batch
         if batch > -1:
             print("FROM BATCH: " + str(batch), file=dest_f)
 
-        if all:
+        if all_summ:
             indices = range(len(recall_score_list))
             labels = [""] * len(recall_score_list)
 
@@ -310,9 +302,9 @@ def direct_speech_ratio(sentences):
 
 def direct_speech_ratio_pas(pas_list):
     """
-    Compute the ratio between direct speech in the text and the whole text.
+    Compute the ratio between direct speech in the text and the whole text length given a pas list.
 
-    :param sentences: list of sentences.
+    :param pas_list: list of pas.
     :return: direct speech ratio of the document.
     """
     size = 0
@@ -342,67 +334,49 @@ def resolve_anaphora(sentences):
     :param sentences: list of input sentences.
     :return: sentences with resolved pronouns.
     """
+    # I'm using a matrix to represent the text, each row is a sentence each column a word
     text_structure = [[word for word in sentence.split()] for sentence in sentences]
 
+    # Putting together all the sentence in the same text.
     text = ""
     for sentence in sentences:
         text += sentence + " "
 
-    # with corenlp.CoreNLPClient(annotators="coref".split(), timeout=1000000000) as client:
-        # annotations = client.annotate(text)
     annotations = anaphora.annotate(text)
     sentences_annotations = []
 
+    # I remove punctuation as it is considered as a token by coref but not in the text structure, I take notice of how
+    # many punctuation signs I removed to then correct the indexing of the text structure.
     deleted_sentences_modifiers = []
     ds_mod = 0
 
-    # print("==========================================")
-    # for sentence_annotations in annotations.sentence:
-    #     print(corenlp.to_text(sentence_annotations))
-    # print("==========================================")
-
     for sentence_annotations in annotations.sentence:
         if len(remove_punct(corenlp.to_text(sentence_annotations))) < 2:
-            strg = corenlp.to_text(sentence_annotations)
             ds_mod += 1
             deleted_sentences_modifiers.append(ds_mod)
         else:
             sentences_annotations.append(sentence_annotations)
             deleted_sentences_modifiers.append(ds_mod)
 
-    # for i in range(len(sentences)):
-     #   print("====================================")
-      #  print(sentences[i])
-       # print(corenlp.to_text(sentences_annotations[i]))
-
+    # If a pronoun is substituted by more than a word I need to take into account that the indexing will vary.
     sentence_modifiers = [0] * len(sentences)
+
+    # For each sentence, if it has annotations, for each pronominal mention I perform the resolution.
     for i in range(len(sentences)):
         sentence_annotations = sentences_annotations[i]
         if sentence_annotations.hasCorefMentionsAnnotation:
-            for mention in sorted(sentence_annotations.mentionsForCoref, key=lambda x:x.startIndex):
+            for mention in sorted(sentence_annotations.mentionsForCoref, key=lambda x: x.startIndex):
                 if mention.mentionType == "PRONOMINAL":
-                    # print("-_--_--------_----______-")
-                    # print(sentences[i])
-                    # print(corenlp.to_text(sentence_annotations))
-                    # print(text_structure[i])
-                    # print([token.word for token in sentence_annotations.token])
-                    # print("-_--_--------_----______-")
                     pronoun_id = mention.mentionID
-                    # Sentence, Begin, End.
-                    # print("pron sent index {}    del mod {}".format(i, deleted_sentences_modifiers[i]))
-                    pronoun_sent_index = i #- deleted_sentences_modifiers[i]
+                    pronoun_sent_index = i
 
                     tks = list(sentence_annotations.token)
-                    # print(tks)
                     punct_modifier = sum([1 for j in range(len(tks)) if tks[j].word in string.punctuation and
                                           j < mention.startIndex])
 
-                    # print(punct_modifier)
-                    # print(sentence_modifiers[i])
                     pronoun_begin_index = mention.startIndex + sentence_modifiers[i] - punct_modifier
                     pronoun_end_index = mention.endIndex + sentence_modifiers[i] - punct_modifier
-                    # print(pronoun_begin_index)
-                    # print(pronoun_end_index)
+
                     pronoun_chains = []
                     for chain in annotations.corefChain:
                         for chain_mention in chain.mention:
@@ -418,15 +392,10 @@ def resolve_anaphora(sentences):
                                                        deleted_sentences_modifiers[chain_mention.sentenceIndex]
                                 reference_begin_index = chain_mention.beginIndex
                                 reference_end_index = chain_mention.endIndex
-                                # print("ref sent index {}".format(reference_sent_index))
-                                # print("ref begin index {}".format(reference_begin_index))
-                                # print("text struct len {}".format(len(text_structure)))
-                                # print(text_structure[reference_sent_index])
+
                                 text_structure[pronoun_sent_index][pronoun_begin_index:pronoun_end_index] = \
                                     text_structure[reference_sent_index][reference_begin_index:reference_end_index]
-                                # print(text_structure[pronoun_sent_index][pronoun_begin_index:pronoun_end_index])
-                                # print(text_structure[reference_sent_index][reference_begin_index:reference_end_index])
-                                # print(text_structure[i])
+
                                 sentence_modifiers[i] += reference_end_index - reference_begin_index - 1
                                 break
 
@@ -442,11 +411,13 @@ def resolve_anaphora(sentences):
 
 def resolve_anaphora_pas_list(pas_list):
     """
-    Reselve the anaphora starting from a pas_list. Directly modifies the realized_pas field in each pas.
+    Resolve the anaphora starting from a pas_list. Directly modifies the realized_pas field in each pas.
 
     :param pas_list: pas list.
     """
-    realized_pas_list = [(pas.realized_pas.replace("...", "").replace("..", "") + "..\n").replace(" ..", "..").replace("...", "..") for pas in pas_list]
+    realized_pas_list = [(pas.realized_pas
+                          .replace("...", "")
+                          .replace("..", "") + "..\n").replace(" ..", "..").replace("...", "..") for pas in pas_list]
     resolved_sentences = resolve_anaphora(realized_pas_list)
 
     for pas in pas_list:
